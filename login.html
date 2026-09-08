@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Corner Cup | Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="split-layout" id="authLayout">
+        <div class="split-image login-image"></div>
+        <div class="split-form">
+            <a href="home.html" class="back-link">← Back to Site</a>
+
+            <div class="form-container">
+                <a class="logo" href="#">
+                    <img src="images/logo.jpg" alt="The Corner Cup Logo">
+                    <span class="brand">The Corner Cup</span>
+                </a>
+
+                <h2 class="form-title" id="formTitle">Welcome Back</h2>
+                <p class="form-subtitle" id="formSubtitle">Good to see you again! Log in to order.</p>
+
+                <form class="auth-form" id="authForm">
+                    <div id="nameField" hidden>
+                        <label for="name" class="custom-label">Full Name</label>
+                        <input type="text" id="name" name="name" class="custom-input" placeholder="John Doe">
+                    </div>
+
+                    <label for="email" class="custom-label">Email Address</label>
+                    <input type="email" id="email" name="email" class="custom-input" required placeholder="name@example.com">
+
+                    <label for="password" class="custom-label">Password</label>
+                    <input type="password" id="password" name="password" class="custom-input" required placeholder="Enter your password">
+
+                    <button type="submit" class="btn submit-btn" id="submitButton">Log In securely</button>
+
+                    <p class="auth-switch" id="authSwitch">
+                        Don't have an account? <a href="login.html?mode=signup">Sign up now</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script>
+        const authForm = document.getElementById('authForm');
+        const nameField = document.getElementById('nameField');
+        const nameInput = document.getElementById('name');
+        const formTitle = document.getElementById('formTitle');
+        const formSubtitle = document.getElementById('formSubtitle');
+        const submitButton = document.getElementById('submitButton');
+        const authSwitch = document.getElementById('authSwitch');
+        const isSignup = new URLSearchParams(window.location.search).get('mode') === 'signup';
+
+        if (isSignup) {
+            document.title = 'The Corner Cup | Sign Up';
+            document.getElementById('authLayout').classList.add('signup-layout');
+            document.querySelector('.split-image').classList.replace('login-image', 'signup-image');
+            nameField.hidden = false;
+            nameInput.required = true;
+            formTitle.textContent = 'Join Us Today';
+            formSubtitle.textContent = 'Create an account to start your journey.';
+            submitButton.textContent = 'Create Account';
+            authSwitch.innerHTML = 'Already part of the crew? <a href="login.html">Log in here</a>';
+        }
+
+        authForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const apiBaseUrl = window.location.hostname === 'thecornercup.netlify.app'
+                ? 'https://thecornercup-api.onrender.com'
+                : '';
+            const endpoint = `${apiBaseUrl}${isSignup ? '/api/signup' : '/api/login'}`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: nameInput.value.trim(),
+                        email,
+                        password
+                    })
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    alert(result.message);
+                    return;
+                }
+
+                localStorage.setItem('currentUser', JSON.stringify(result));
+                window.location.href = 'home.html';
+            } catch (error) {
+                alert('Unable to connect to the server.');
+            }
+        });
+    </script>
+</body>
+
+</html>

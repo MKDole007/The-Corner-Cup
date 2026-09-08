@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Corner Cup | Cart</title>
+    <link rel="stylesheet" href="style.css?v=3">
+</head>
+
+<body>
+    <header>
+        <div class="header-row">
+            <a class="logo" href="home.html">
+                <img src="images/logo.jpg" alt="The Corner Cup Logo">
+                <span class="brand">The Corner Cup</span>
+            </a>
+            <nav>
+                <div class="nav-links">
+                    <a href="home.html">Home</a>
+                    <a href="menu.html">Menu</a>
+                    <a href="about.html">About</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="cart.html" class="active">Cart</a>
+                    <a href="login.html" style="border: 1px solid #fff7ed;">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <video class="hero-video" autoplay muted loop playsinline>
+            <source src="images/mk1.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+        </video>
+        <div>
+            <h1>Your Cart</h1>
+            <p>Review your favorite treats and confirm your order with just a few clicks.</p>
+            <div class="hero-actions">
+                <a class="btn" href="menu.html">Continue Shopping</a>
+                <a class="btn" href="contact.html">Need Help?</a>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <h2 class="section-title">Your Cart</h2>
+        <div class="cart-wrapper">
+            <div id="cartItems" class="cart-items"></div>
+            <div class="cart-summary">
+                <h3>Order Summary</h3>
+                <p id="cartCount">0 items selected</p>
+                <div id="invoiceBox" class="invoice-box"></div>
+                <button class="btn" type="button" onclick="checkout()">Confirm Order</button>
+                <button class="btn" type="button" onclick="clearCart()">Clear Cart</button>
+                <br>
+                <a class="btn" href="menu.html">Continue Shopping</a>
+                <div id="successMessage" class="success-message" style="display:none;"></div>
+                <div id="orderDetails" class="order-details" style="display:none;"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 The Corner Cup. Crafted with care for every cup.</p>
+    </footer>
+
+    <script>
+        function renderCart() {
+            const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
+            const cartContainer = document.getElementById('cartItems');
+            const cartCount = document.getElementById('cartCount');
+            const invoiceBox = document.getElementById('invoiceBox');
+            const orderDetails = document.getElementById('orderDetails');
+
+            orderDetails.style.display = 'none';
+            orderDetails.innerHTML = '';
+
+            if (!cartItems.length) {
+                cartContainer.innerHTML = '<div class="empty-cart">Your cart is empty. Add some delicious items from the menu.</div>';
+                cartCount.textContent = '0 items selected';
+                invoiceBox.innerHTML = '<div class="invoice-row"><span>Subtotal</span><span>₹0</span></div><div class="invoice-total"><span>Total</span><span>₹0</span></div>';
+                return;
+            }
+
+            const quantityTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+            const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            cartCount.textContent = `${quantityTotal} item${quantityTotal > 1 ? 's' : ''} in cart`;
+
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const availablePoints = currentUser ? (currentUser.points || 0) : 0;
+            const appliedPoints = window.currentAppliedPoints || 0;
+            const finalTotal = total - appliedPoints;
+
+            invoiceBox.innerHTML = `
+                <div class="invoice-row"><span>Subtotal</span><span>₹${total}</span></div>
+                ${currentUser && availablePoints > 0 ? `
+                <div class="invoice-row" style="align-items:center;">
+                    <span>Use Points (Max ${Math.min(availablePoints, total)})</span>
+                    <div>
+                        <input type="number" id="redeemPointsInput" max="${Math.min(availablePoints, total)}" min="0" value="${appliedPoints}" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
+                        <button type="button" class="btn" style="padding: 4px 8px; margin-top: 0; font-size: 0.8rem;" onclick="applyPoints()">Apply</button>
+                    </div>
+                </div>
+                ${appliedPoints > 0 ? `<div class="invoice-row" style="color: green;"><span>Points Discount</span><span>-₹${appliedPoints}</span></div>` : ''}
+                ` : ''}
+                <div class="invoice-row"><span>Service</span><span>₹0</span></div>
+                <div class="invoice-total"><span>Total</span><span>₹${finalTotal}</span></div>
+            `;
+
+            cartContainer.innerHTML = cartItems.map((item, index) => `
+                <div class="cart-item">
+                    <img src="${item.image}" alt="${item.name}">
+                    <div>
+                        <h3>${item.name}</h3>
+                        <p class="item-meta">Price: ₹${item.price} × ${item.quantity}</p>
+                        <div class="qty-controls">
+                            <button class="qty-btn" type="button" onclick="changeQty(${index}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button class="qty-btn" type="button" onclick="changeQty(${index}, 1)">+</button>
+                            <button class="cancel-btn" type="button" onclick="removeFromCart(${index})">Cancel</button>
+                        </div>
+                        <p class="item-total">Item total: ₹${item.price * item.quantity}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function applyPoints() {
+            const input = document.getElementById('redeemPointsInput');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
+            const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+            if (input && currentUser) {
+                let pts = parseInt(input.value) || 0;
+                pts = Math.max(0, Math.min(pts, currentUser.points, total));
+                window.currentAppliedPoints = pts;
+                renderCart();
+            }
+        }
+
+        function changeQty(index, delta) {
+            const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
+            if (!cartItems[index]) return;
+
+            cartItems[index].quantity = Math.max(1, cartItems[index].quantity + delta);
+            localStorage.setItem('cafeCart', JSON.stringify(cartItems));
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
+            if (!cartItems[index]) return;
+
+            cartItems.splice(index, 1);
+            localStorage.setItem('cafeCart', JSON.stringify(cartItems));
+            renderCart();
+        }
+
+        function clearCart() {
+            localStorage.removeItem('cafeCart');
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('orderDetails').style.display = 'none';
+            renderCart();
+        }
+
+        function checkout() {
+            const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
+            const message = document.getElementById('successMessage');
+            const orderDetails = document.getElementById('orderDetails');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+            if (!cartItems.length) {
+                message.style.display = 'block';
+                message.textContent = 'Your cart is empty. Add items first.';
+                orderDetails.style.display = 'none';
+                orderDetails.innerHTML = '';
+                return;
+            }
+
+            const quantityTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+            const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const appliedPoints = window.currentAppliedPoints || 0;
+            const finalTotal = total - appliedPoints;
+            const earnedPoints = Math.floor(finalTotal / 10);
+
+            if (currentUser) {
+                const orderData = {
+                    date: new Date().toLocaleString(),
+                    total: finalTotal,
+                    discount: appliedPoints,
+                    items: cartItems
+                };
+                if (!currentUser.orders) currentUser.orders = [];
+                currentUser.orders.push(orderData);
+
+                if (!currentUser.points) currentUser.points = 0;
+                currentUser.points -= appliedPoints;
+                currentUser.points += earnedPoints;
+
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                let users = JSON.parse(localStorage.getItem('appUsers') || '[]');
+                let userIndex = users.findIndex(u => u.email === currentUser.email);
+                if (userIndex !== -1) {
+                    users[userIndex] = currentUser;
+                    localStorage.setItem('appUsers', JSON.stringify(users));
+                }
+            } else {
+                alert("Please log in to log your order and earn points!");
+            }
+
+            window.currentAppliedPoints = 0;
+            localStorage.removeItem('cafeCart');
+            renderCart();
+
+            message.style.display = 'block';
+            message.textContent = '🎉 Order placed successfully!';
+
+            orderDetails.style.display = 'block';
+            orderDetails.innerHTML = `
+                <h4>Order details</h4>
+                <p>${quantityTotal} item${quantityTotal > 1 ? 's' : ''} ordered successfully.</p>
+                <p><strong>Total paid:</strong> ₹${finalTotal} ${appliedPoints > 0 ? `(₹${appliedPoints} discount applied)` : ''}</p>
+                ${currentUser ? `<p style="color: green; font-weight: bold;">+${earnedPoints} Points Earned</p>` : ''}
+                <ul>
+                    ${cartItems.map(item => `<li>${item.quantity}× ${item.name} = ₹${item.price * item.quantity}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        document.addEventListener('DOMContentLoaded', renderCart);
+    </script>
+    <script src="app.js"></script>
+</body>
+
+</html>

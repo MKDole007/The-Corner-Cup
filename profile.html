@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Corner Cup | Profile</title>
+    <link rel="stylesheet" href="style.css?v=4">
+</head>
+
+<body>
+    <header>
+        <div class="header-row">
+            <a class="logo" href="home.html">
+                <img src="images/logo.jpg" alt="The Corner Cup Logo">
+                <span class="brand">The Corner Cup</span>
+            </a>
+            <nav>
+                <div class="nav-links">
+                    <a href="home.html">Home</a>
+                    <a href="menu.html">Menu</a>
+                    <a href="about.html">About</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="cart.html">Cart</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2 class="section-title">Your Profile</h2>
+        <div class="grid" style="grid-template-columns: 1fr; max-width: 600px; margin: auto;">
+            <div class="card" id="profileCard">
+                <h3>Profile Information</h3>
+                <form id="profileForm">
+                    <label class="custom-label">Full Name</label>
+                    <input type="text" id="profileName" class="custom-input" required>
+
+                    <label class="custom-label">Email Address</label>
+                    <input type="email" id="profileEmail" class="custom-input" required disabled>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn">Save Changes</button>
+                        <button type="button" class="btn" onclick="logout()"
+                            style="background: #a04040;">Logout</button>
+                    </div>
+                </form>
+                <p id="profileMessage" style="margin-top: 10px; color: green; display: none;">Profile updated!</p>
+            </div>
+
+            <div class="card">
+                <h3>Rewards Points</h3>
+                <p style="font-size: 2.5rem; font-weight: bold; color: #9a5b2e;" id="pointsDisplay">0</p>
+                <p>Earn 1 point for every ₹10 spent!</p>
+            </div>
+
+            <div class="card" style="grid-column: 1 / -1;">
+                <h3>Order History</h3>
+                <div id="orderHistoryContainer">
+                    <!-- Orders will load here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 The Corner Cup. Crafted with care for every cup.</p>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('profileName').value = currentUser.name;
+            document.getElementById('profileEmail').value = currentUser.email;
+            document.getElementById('pointsDisplay').textContent = currentUser.points || 0;
+
+            const historyContainer = document.getElementById('orderHistoryContainer');
+            if (currentUser.orders && currentUser.orders.length > 0) {
+                historyContainer.innerHTML = currentUser.orders.map((order, idx) => `
+                    <div style="border: 1px solid #eadfce; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fffaf5;">
+                        <p><strong>Order #${idx + 1}</strong></p>
+                        <p><strong>Date:</strong> ${order.date}</p>
+                        <p><strong>Total:</strong> ₹${order.total} ${(order.discount || 0) > 0 ? `<span style="color: green; font-size:0.9rem;">(₹${order.discount} discount applied)</span>` : ''}</p>
+                        <p><strong>Points Earned:</strong> +${Math.floor(order.total / 10)}</p>
+                        <ul style="padding-left: 20px; margin-top: 8px;">
+                            ${order.items.map(item => `<li>${item.quantity}x ${item.name} (₹${item.price * item.quantity})</li>`).join('')}
+                        </ul>
+                    </div>
+                `).reverse().join('');
+            } else {
+                historyContainer.innerHTML = '<p>No orders yet. Head to the menu to get started!</p>';
+            }
+
+            document.getElementById('profileForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newName = document.getElementById('profileName').value;
+
+                currentUser.name = newName;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                // Update users list
+                let users = JSON.parse(localStorage.getItem('appUsers') || '[]');
+                let userIndex = users.findIndex(u => u.email === currentUser.email);
+                if (userIndex !== -1) {
+                    users[userIndex].name = newName;
+                    localStorage.setItem('appUsers', JSON.stringify(users));
+                }
+
+                document.getElementById('profileMessage').style.display = 'block';
+                updateNav();
+                setTimeout(() => document.getElementById('profileMessage').style.display = 'none', 3000);
+            });
+        });
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'home.html';
+        }
+    </script>
+</body>
+
+</html>
