@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>☕︎ The Corner Cup | Menu</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -31,7 +31,6 @@
     <section class="hero">
         <video class="hero-video" autoplay muted loop playsinline>
             <source src="images/mk1.mp4" type="video/mp4">
-            Your browser does not support HTML5 video.
         </video>
         <div>
             <h1>Discover Our Signature Menu</h1>
@@ -67,12 +66,15 @@
                 <p><strong>₹149</strong></p>
                 <div class="card-actions"><button class="details-btn" type="button">View details</button><button class="btn" type="button">Add to Cart</button></div>
             </div>
-            <div class="card">
+            <div class="card" data-category="Sandwich" data-details="A stacked sandwich with crisp greens, juicy fillings, and perfectly toasted bread." data-ingredients="Toasted bread, fresh greens, tomato, grilled veggies, signature sauce" data-time="10 min">
                 <img class="item-image" src="images/Crispy Club Sandwich.png" alt="Crispy Club Sandwich">
                 <h3>Crispy Club Sandwich</h3>
                 <p>"Fresh ingredients, perfectly toasted." 🥪</p>
                 <p><strong>₹199</strong></p>
-                <button class="btn" type="button">Add to Cart</button>
+                <div class="card-actions">
+                    <button class="details-btn" type="button">View details</button>
+                    <button class="btn" type="button">Add to Cart</button>
+                </div>
             </div>
             <div class="card">
                 <img class="item-image" src="images/Cappuccino.png" alt="Cappuccino">
@@ -208,9 +210,20 @@
             let selectedQuantity = 1;
 
             document.querySelectorAll('.card').forEach((card) => {
-                const actions = card.querySelector('.card-actions') || card.appendChild(document.createElement('div'));
-                actions.classList.add('card-actions');
-                if (!actions.querySelector('.details-btn')) {
+                const existingActions = card.querySelector('.card-actions');
+                const standaloneAddButtons = Array.from(card.querySelectorAll('.btn')).filter((button) => !button.closest('.card-actions'));
+
+                if (!existingActions) {
+                    const actions = document.createElement('div');
+                    actions.className = 'card-actions';
+                    standaloneAddButtons.forEach((button) => actions.appendChild(button));
+                    card.appendChild(actions);
+                } else {
+                    standaloneAddButtons.forEach((button) => existingActions.appendChild(button));
+                }
+
+                const actions = card.querySelector('.card-actions');
+                if (actions && !actions.querySelector('.details-btn')) {
                     const detailsButton = document.createElement('button');
                     detailsButton.className = 'details-btn';
                     detailsButton.type = 'button';
