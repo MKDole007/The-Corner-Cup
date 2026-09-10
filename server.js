@@ -10,7 +10,7 @@ const app = express()
 
 app.use(express.static(path.join(__dirname)))
 app.use(express.json())
-app.use((req, res, next) => {
+app.use((req, res, next) => {   
     const origin = req.headers.origin
 
     if (origin === allowedOrigin || origin?.startsWith('http://localhost:')) {
