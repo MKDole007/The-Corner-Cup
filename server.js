@@ -10,7 +10,7 @@ const app = express()
 
 app.use(express.static(path.join(__dirname)))
 app.use(express.json())
-app.use((req, res, next) => {   
+app.use((req, res, next) => {
     const origin = req.headers.origin
 
     if (origin === allowedOrigin || origin?.startsWith('http://localhost:')) {
@@ -85,6 +85,32 @@ app.post('/api/login', async (req, res) => {
         res.json({ name: user.name, email: user.email, orders: user.orders, points: user.points })
     } catch (error) {
         res.status(500).json({ message: 'Unable to log in.' })
+    }
+})
+
+app.post('/api/order', async (req, res) => {
+    try {
+        const { email, orderData, earnedPoints, appliedPoints } = req.body
+        if (!email || !orderData) {
+            return res.status(400).json({ message: 'Email and orderData are required.' })
+        }
+
+        const user = await User.findOne({ email: email.trim().toLowerCase() })
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' })
+        }
+
+        let updatedPoints = user.points || 0
+        updatedPoints -= (appliedPoints || 0)
+        updatedPoints += (earnedPoints || 0)
+
+        user.points = updatedPoints
+        user.orders.push(orderData)
+        await user.save()
+
+        res.json({ name: user.name, email: user.email, orders: user.orders, points: user.points })
+    } catch (error) {
+        res.status(500).json({ message: 'Unable to process order.' })
     }
 })
 

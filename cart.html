@@ -165,7 +165,7 @@
             renderCart();
         }
 
-        function checkout() {
+        async function checkout() {
             const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
             const message = document.getElementById('successMessage');
             const orderDetails = document.getElementById('orderDetails');
@@ -192,20 +192,38 @@
                     discount: appliedPoints,
                     items: cartItems
                 };
-                if (!currentUser.orders) currentUser.orders = [];
-                currentUser.orders.push(orderData);
 
-                if (!currentUser.points) currentUser.points = 0;
-                currentUser.points -= appliedPoints;
-                currentUser.points += earnedPoints;
+                const apiBaseUrl = window.location.hostname === 'thecornercup.netlify.app'
+                    ? 'https://thecornercup-api.onrender.com'
+                    : '';
 
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                try {
+                    const response = await fetch(`${apiBaseUrl}/api/order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: currentUser.email,
+                            orderData,
+                            earnedPoints,
+                            appliedPoints
+                        })
+                    });
 
-                let users = JSON.parse(localStorage.getItem('appUsers') || '[]');
-                let userIndex = users.findIndex(u => u.email === currentUser.email);
-                if (userIndex !== -1) {
-                    users[userIndex] = currentUser;
-                    localStorage.setItem('appUsers', JSON.stringify(users));
+                    if (!response.ok) {
+                        try {
+                            const result = await response.json();
+                            alert(result.message || 'Error processing order');
+                        } catch (e) {
+                            alert('Server error: Did you forget to restart the server?');
+                        }
+                        return;
+                    }
+
+                    const updatedUser = await response.json();
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                } catch (err) {
+                    alert('Unable to connect to the server to place order.');
+                    return;
                 }
             } else {
                 alert("Please log in to log your order and earn points!");
