@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Corner Cup | Cart</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -193,9 +193,7 @@
                     items: cartItems
                 };
 
-                const apiBaseUrl = window.location.hostname === 'thecornercup.netlify.app'
-                    ? 'https://thecornercup-api.onrender.com'
-                    : '';
+                const apiBaseUrl = '';
 
                 try {
                     const response = await fetch(`${apiBaseUrl}/api/order`, {

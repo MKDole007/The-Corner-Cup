@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const os = require('os')
 const port = process.env.PORT || 3019
 const host = '0.0.0.0'
-const allowedOrigin = 'https://thecornercup.netlify.app'
+
 const app = express()
 
 app.use(express.static(path.join(__dirname)))
@@ -13,7 +13,7 @@ app.use(express.json())
 app.use((req, res, next) => {
     const origin = req.headers.origin
 
-    if (origin === allowedOrigin || origin?.startsWith('http://localhost:')) {
+    if (origin?.startsWith('http://localhost:')) {
         res.setHeader('Access-Control-Allow-Origin', origin)
         res.setHeader('Vary', 'Origin')
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
