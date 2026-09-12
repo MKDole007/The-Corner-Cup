@@ -125,8 +125,10 @@ app.get('/', (req, res) => {
 app.listen(port, host, () => {
     console.log(`Server is running at http://localhost:${port}`)
 
-    const networkAddresses = Object.values(os.networkInterfaces())
-        .flat()
+    const interfaces = os.networkInterfaces()
+    const networkAddresses = Object.entries(interfaces)
+        .filter(([name]) => !name.toLowerCase().includes('vethernet') && !name.toLowerCase().includes('wsl'))
+        .flatMap(([, addrs]) => addrs)
         .filter(address => address && address.family === 'IPv4' && !address.internal)
 
     networkAddresses.forEach(address => {
