@@ -73,8 +73,7 @@
             e.preventDefault();
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            const apiBaseUrl = '';
-            const endpoint = `${apiBaseUrl}${isSignup ? '/api/signup' : '/api/login'}`;
+            const endpoint = isSignup ? '/api/signup' : '/api/login';
 
             try {
                 const response = await fetch(endpoint, {

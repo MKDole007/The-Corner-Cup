@@ -410,39 +410,32 @@
             // Start the download while the click gesture is still active; browsers
             // can block downloads triggered after an awaited network request.
             downloadInvoice();
-            if (currentUser) {
-                const apiBaseUrl = '';
+            try {
+                const response = await fetch('/api/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: currentUser.email,
+                        orderData,
+                        earnedPoints,
+                        appliedPoints
+                    })
+                });
 
-                try {
-                    const response = await fetch(`${apiBaseUrl}/api/order`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: currentUser.email,
-                            orderData,
-                            earnedPoints,
-                            appliedPoints
-                        })
-                    });
-
-                    if (!response.ok) {
-                        try {
-                            const result = await response.json();
-                            alert(result.message || 'Error processing order');
-                        } catch (e) {
-                            alert('Server error: Did you forget to restart the server?');
-                        }
-                        return;
+                if (!response.ok) {
+                    try {
+                        const result = await response.json();
+                        alert(result.message || 'Error processing order');
+                    } catch (e) {
+                        alert('Server error: Did you forget to restart the server?');
                     }
-
-                    const updatedUser = await response.json();
-                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-                } catch (err) {
-                    alert('Unable to connect to the server to place order.');
                     return;
                 }
-            } else {
-                alert("Please log in to log your order and earn points!");
+
+                const updatedUser = await response.json();
+                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            } catch (err) {
+                alert('Unable to connect to the server to place order.');
                 return;
             }
 
