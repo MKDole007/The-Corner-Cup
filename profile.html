@@ -67,6 +67,7 @@
         <p>© 2026 The Corner Cup. Crafted with care for every cup.</p>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -81,18 +82,23 @@
             document.getElementById('pointsDisplay').textContent = currentUser.points || 0;
 
             const historyContainer = document.getElementById('orderHistoryContainer');
-            if (currentUser.orders && currentUser.orders.length > 0) {
-                historyContainer.innerHTML = currentUser.orders.map((order, idx) => `
+            const reversedOrders = [...(currentUser.orders || [])].reverse();
+            window._profileOrders = reversedOrders;
+            window._profileUserName = currentUser.name;
+
+            if (reversedOrders.length > 0) {
+                historyContainer.innerHTML = reversedOrders.map((order, idx) => `
                     <div style="border: 1px solid #eadfce; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fffaf5;">
-                        <p><strong>Order #${idx + 1}</strong></p>
+                        <p><strong>Order #${currentUser.orders.length - idx}</strong></p>
                         <p><strong>Date:</strong> ${order.date}</p>
-                        <p><strong>Total:</strong> ₹${order.total} ${(order.discount || 0) > 0 ? `<span style="color: green; font-size:0.9rem;">(₹${order.discount} discount applied)</span>` : ''}</p>
+                        <p><strong>Total:</strong> &#8377;${order.total} ${(order.discount || 0) > 0 ? '<span style="color: green; font-size:0.9rem;">(&#8377;' + order.discount + ' discount applied)</span>' : ''}</p>
                         <p><strong>Points Earned:</strong> +${Math.floor(order.total / 10)}</p>
                         <ul style="padding-left: 20px; margin-top: 8px;">
-                            ${order.items.map(item => `<li>${item.quantity}x ${item.name} (₹${item.price * item.quantity})</li>`).join('')}
+                            ${order.items.map(item => '<li>' + item.quantity + 'x ' + item.name + ' (&#8377;' + (item.price * item.quantity) + ')</li>').join('')}
                         </ul>
+                        <button class="btn" type="button" onclick="downloadOrderInvoice(${idx})" style="margin-top: 10px; padding: 6px 16px; font-size: 0.85rem;">&#11015; Download Invoice</button>
                     </div>
-                `).reverse().join('');
+                `).join('');
             } else {
                 historyContainer.innerHTML = '<p>No orders yet. Head to the menu to get started!</p>';
             }
@@ -120,7 +126,153 @@
 
         function logout() {
             localStorage.removeItem('currentUser');
-            window.location.href = 'home.html';
+            localStorage.removeItem('cafeCart');
+            window.location.href = 'login.html';
+        }
+
+        function downloadOrderInvoice(idx) {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert('PDF library failed to load. Please refresh the page and try again.');
+                return;
+            }
+            const order = window._profileOrders && window._profileOrders[idx];
+            if (!order) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 45;
+            const contentWidth = pageWidth - margin * 2;
+
+            const subtotal = order.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+            const discount = Number(order.discount || 0);
+            const totalPaid = Number(order.total !== undefined ? order.total : subtotal - discount);
+            const earnedPoints = order.earnedPoints !== undefined ? order.earnedPoints : Math.floor(totalPaid / 10);
+            const userName = window._profileUserName || 'Customer';
+
+            // Background
+            doc.setFillColor(250, 247, 244);
+            doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+            // Header bar
+            doc.setFillColor(58, 40, 28);
+            doc.rect(0, 0, pageWidth, 80, 'F');
+            doc.setTextColor(255, 248, 240);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(24);
+            doc.text('The Corner Cup', margin, 50);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('Premium Cafe & Bakery', margin, 66);
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.text('INVOICE', pageWidth - margin, 52, { align: 'right' });
+
+            // Meta
+            const metaY = 108;
+            doc.setTextColor(50, 35, 22);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Bill To:', margin, metaY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(userName, margin, metaY + 15);
+
+            const rightX = pageWidth - margin;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Date:', rightX - 140, metaY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(order.date, rightX - 100, metaY);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Order ID:', rightX - 140, metaY + 15);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(order.id || Date.now()), rightX - 90, metaY + 15);
+
+            // Divider
+            doc.setDrawColor(200, 185, 168);
+            doc.setLineWidth(0.5);
+            doc.line(margin, metaY + 30, pageWidth - margin, metaY + 30);
+
+            // Table header
+            const tHeadY = metaY + 56;
+            doc.setFillColor(58, 40, 28);
+            doc.rect(margin, tHeadY - 14, contentWidth, 22, 'F');
+            doc.setTextColor(255, 248, 240);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            const colItem = margin + 6;
+            const colQty = margin + contentWidth * 0.55;
+            const colPrice = margin + contentWidth * 0.70;
+            const colTotal = margin + contentWidth - 4;
+            doc.text('Item', colItem, tHeadY);
+            doc.text('Qty', colQty, tHeadY);
+            doc.text('Unit Price', colPrice, tHeadY);
+            doc.text('Total', colTotal, tHeadY, { align: 'right' });
+
+            // Rows
+            doc.setTextColor(50, 35, 22);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            let rowY = tHeadY + 20;
+            let rowAlt = false;
+            order.items.forEach((item) => {
+                const itemTotal = item.price * item.quantity;
+                if (rowAlt) {
+                    doc.setFillColor(244, 238, 232);
+                    doc.rect(margin, rowY - 12, contentWidth, 20, 'F');
+                }
+                rowAlt = !rowAlt;
+                doc.text(item.name, colItem, rowY);
+                doc.text(String(item.quantity), colQty, rowY);
+                doc.text('Rs. ' + item.price, colPrice, rowY);
+                doc.text('Rs. ' + itemTotal, colTotal, rowY, { align: 'right' });
+                rowY += 20;
+            });
+
+            // Summary
+            rowY += 10;
+            doc.setDrawColor(200, 185, 168);
+            doc.line(margin, rowY, pageWidth - margin, rowY);
+            rowY += 20;
+            const sumLabelX = pageWidth - margin - 130;
+            const sumValueX = pageWidth - margin;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(50, 35, 22);
+            doc.text('Subtotal:', sumLabelX, rowY);
+            doc.text('Rs. ' + subtotal, sumValueX, rowY, { align: 'right' });
+            rowY += 17;
+            if (discount > 0) {
+                doc.setTextColor(40, 110, 40);
+                doc.text('Points Redeemed:', sumLabelX, rowY);
+                doc.text('-Rs. ' + discount, sumValueX, rowY, { align: 'right' });
+                doc.setTextColor(50, 35, 22);
+                rowY += 17;
+            }
+            doc.setFillColor(58, 40, 28);
+            doc.rect(sumLabelX - 8, rowY - 13, sumValueX - sumLabelX + 20, 22, 'F');
+            doc.setTextColor(255, 248, 240);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Total Paid:', sumLabelX, rowY);
+            doc.text('Rs. ' + totalPaid, sumValueX, rowY, { align: 'right' });
+            rowY += 22;
+            doc.setTextColor(40, 110, 40);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('Points Earned: +' + earnedPoints + ' pts', margin, rowY + 14);
+
+            // Footer
+            doc.setDrawColor(200, 185, 168);
+            doc.line(margin, pageHeight - 58, pageWidth - margin, pageHeight - 58);
+            doc.setTextColor(130, 105, 82);
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9.5);
+            doc.text('Thank you for visiting The Corner Cup  -  We hope to see you again!', pageWidth / 2, pageHeight - 40, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.text('This is a computer-generated invoice and does not require a signature.', pageWidth / 2, pageHeight - 24, { align: 'center' });
+
+            doc.save('corner-cup-invoice-order-' + (idx + 1) + '.pdf');
         }
     </script>
 </body>

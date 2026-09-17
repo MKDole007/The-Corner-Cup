@@ -36,6 +36,17 @@ const userSchema = new mongoose.Schema({
 })
 
 const User = mongoose.model('User', userSchema)
+const orderSchema = new mongoose.Schema({
+    customerEmail: { type: String, required: true, lowercase: true, trim: true },
+    customerName: { type: String, required: true, trim: true },
+    orderData: { type: mongoose.Schema.Types.Mixed, required: true },
+    status: { type: String, enum: ['new', 'preparing', 'ready', 'completed', 'cancelled'], default: 'new' }
+}, { timestamps: true })
+const Order = mongoose.model('Order', orderSchema)
+
+const adminSessions = new Set()
+const adminEmail = (process.env.ADMIN_EMAIL || 'admin@cornercup.local').trim().toLowerCase()
+const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
     const hash = crypto.scryptSync(password, salt, 64).toString('hex')
@@ -47,6 +58,57 @@ function passwordMatches(password, storedPassword) {
     const hash = crypto.scryptSync(password, salt, 64).toString('hex')
     return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(storedHash, 'hex'))
 }
+
+function requireAdmin(req, res, next) {
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (!token || !adminSessions.has(token)) {
+        return res.status(401).json({ message: 'Admin authentication required.' })
+    }
+    next()
+}
+
+app.post('/api/admin/login', (req, res) => {
+    const email = req.body.email?.trim().toLowerCase()
+    const password = req.body.password || ''
+    if (email !== adminEmail || password !== adminPassword) {
+        return res.status(401).json({ message: 'Invalid admin credentials.' })
+    }
+    const token = crypto.randomBytes(32).toString('hex')
+    adminSessions.add(token)
+    res.json({ token })
+})
+
+app.post('/api/admin/logout', requireAdmin, (req, res) => {
+    adminSessions.delete(req.headers.authorization.replace('Bearer ', ''))
+    res.sendStatus(204)
+})
+
+app.get('/api/admin/orders', requireAdmin, async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ createdAt: -1 }).lean()
+        res.json(orders)
+    } catch (error) {
+        res.status(500).json({ message: 'Unable to load orders.' })
+    }
+})
+
+app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
+    const allowedStatuses = ['new', 'preparing', 'ready', 'completed', 'cancelled']
+    if (!allowedStatuses.includes(req.body.status)) {
+        return res.status(400).json({ message: 'Invalid order status.' })
+    }
+    try {
+        const order = await Order.findByIdAndUpdate(
+            req.params.id,
+            { status: req.body.status },
+            { new: true }
+        ).lean()
+        if (!order) return res.status(404).json({ message: 'Order not found.' })
+        res.json(order)
+    } catch (error) {
+        res.status(400).json({ message: 'Invalid order ID.' })
+    }
+})
 
 app.post('/api/signup', async (req, res) => {
     try {
@@ -107,6 +169,11 @@ app.post('/api/order', async (req, res) => {
         user.points = updatedPoints
         user.orders.push(orderData)
         await user.save()
+        await Order.create({
+            customerEmail: user.email,
+            customerName: user.name,
+            orderData
+        })
 
         res.json({ name: user.name, email: user.email, orders: user.orders, points: user.points })
     } catch (error) {

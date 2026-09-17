@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Corner Cup | Admin Orders</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        body { background: #f8f2ec; }
+        .admin-shell { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        .admin-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px #22150d14; }
+        .admin-form { max-width: 420px; margin: 80px auto; }
+        .admin-form input, .admin-form button { box-sizing: border-box; width: 100%; margin: 8px 0; padding: 12px; }
+        .order-card { border: 1px solid #eadfce; border-radius: 12px; padding: 16px; margin: 12px 0; }
+        .order-card select { padding: 8px; margin-top: 10px; }
+        .error { color: #a32626; min-height: 24px; }
+    </style>
+</head>
+<body>
+    <main class="admin-shell">
+        <section id="loginCard" class="admin-card admin-form">
+            <h1>Admin Orders</h1>
+            <p>Private staff area</p>
+            <p><strong>Development login:</strong><br>admin@cornercup.local / admin123</p>
+            <form id="loginForm">
+                <input id="email" type="email" placeholder="Admin email" required>
+                <input id="password" type="password" placeholder="Admin password" required>
+                <button class="btn" type="submit">Log in</button>
+            </form>
+            <p id="loginError" class="error"></p>
+        </section>
+
+        <section id="ordersCard" class="admin-card" hidden>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                <h1>Received Orders</h1>
+                <button id="logoutButton" class="btn" type="button">Log out</button>
+            </div>
+            <p id="ordersMessage"></p>
+            <div id="orders"></div>
+        </section>
+    </main>
+    <script>
+        const loginCard = document.getElementById('loginCard');
+        const ordersCard = document.getElementById('ordersCard');
+        const loginError = document.getElementById('loginError');
+        const ordersMessage = document.getElementById('ordersMessage');
+        const ordersContainer = document.getElementById('orders');
+        let adminToken = sessionStorage.getItem('adminToken');
+
+        async function adminRequest(url, options = {}) {
+            const headers = { ...(options.headers || {}), Authorization: `Bearer ${adminToken}` };
+            const response = await fetch(url, { ...options, headers });
+            if (response.status === 401) {
+                sessionStorage.removeItem('adminToken');
+                adminToken = null;
+                showLogin();
+                throw new Error('Admin session expired.');
+            }
+            return response;
+        }
+
+        function showLogin() {
+            loginCard.hidden = false;
+            ordersCard.hidden = true;
+        }
+
+        async function loadOrders() {
+            const response = await adminRequest('/api/admin/orders');
+            if (!response.ok) throw new Error('Unable to load orders.');
+            const orders = await response.json();
+            ordersMessage.textContent = `${orders.length} order${orders.length === 1 ? '' : 's'} received`;
+            ordersContainer.innerHTML = orders.length ? orders.map(order => `
+                <article class="order-card">
+                    <strong>Order ${order._id}</strong>
+                    <p><strong>${order.customerName}</strong> — ${order.customerEmail}</p>
+                    <p>${order.orderData.items.map(item => `${item.quantity}× ${item.name}`).join(', ')}</p>
+                    <p><strong>Total: ₹${order.orderData.total}</strong> · ${new Date(order.createdAt).toLocaleString()}</p>
+                    <label>Status:
+                        <select data-order-id="${order._id}" onchange="updateStatus(this)">
+                            ${['new', 'preparing', 'ready', 'completed', 'cancelled'].map(status =>
+                                `<option value="${status}" ${status === order.status ? 'selected' : ''}>${status}</option>`).join('')}
+                        </select>
+                    </label>
+                </article>
+            `).join('') : '<p>No orders received yet.</p>';
+        }
+
+        async function updateStatus(select) {
+            const response = await adminRequest(`/api/admin/orders/${select.dataset.orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: select.value })
+            });
+            if (!response.ok) alert('Unable to update order status.');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            loginError.textContent = '';
+            let response;
+            let result;
+            try {
+                response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+                result = await response.json();
+            } catch (error) {
+                loginError.textContent = 'Cannot connect to the server. Start it with: npm start';
+                return;
+            }
+            if (!response.ok) {
+                loginError.textContent = result.message;
+                return;
+            }
+            adminToken = result.token;
+            sessionStorage.setItem('adminToken', adminToken);
+            loginCard.hidden = true;
+            ordersCard.hidden = false;
+            await loadOrders();
+        });
+
+        document.getElementById('logoutButton').addEventListener('click', async () => {
+            if (adminToken) await adminRequest('/api/admin/logout', { method: 'POST' });
+            sessionStorage.removeItem('adminToken');
+            adminToken = null;
+            showLogin();
+        });
+
+        if (adminToken) {
+            loginCard.hidden = true;
+            ordersCard.hidden = false;
+            loadOrders().catch(error => { ordersMessage.textContent = error.message; });
+        }
+    </script>
+</body>
+</html>

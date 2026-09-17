@@ -22,7 +22,6 @@
                     <a href="about.html">About</a>
                     <a href="contact.html">Contact</a>
                     <a href="cart.html" class="active">Cart</a>
-                    <a href="login.html" style="border: 1px solid #fff7ed;">Logout</a>
                 </div>
             </nav>
         </div>
@@ -51,12 +50,13 @@
                 <h3>Order Summary</h3>
                 <p id="cartCount">0 items selected</p>
                 <div id="invoiceBox" class="invoice-box"></div>
-                <button class="btn" type="button" onclick="checkout()">Confirm Order</button>
+                <button class="btn" id="confirmOrderButton" type="button" onclick="checkout()" disabled>Confirm Order</button>
                 <button class="btn" type="button" onclick="clearCart()">Clear Cart</button>
                 <br>
                 <a class="btn" href="menu.html">Continue Shopping</a>
                 <div id="successMessage" class="success-message" style="display:none;"></div>
                 <div id="orderDetails" class="order-details" style="display:none;"></div>
+                <button class="btn" id="invoiceDownloadButton" type="button" onclick="downloadInvoice()" style="display:none; margin-top: 12px;">Download Invoice PDF</button>
             </div>
         </div>
     </main>
@@ -65,6 +65,7 @@
         <p>© 2026 The Corner Cup. Crafted with care for every cup.</p>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         function renderCart() {
             const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
@@ -72,14 +73,18 @@
             const cartCount = document.getElementById('cartCount');
             const invoiceBox = document.getElementById('invoiceBox');
             const orderDetails = document.getElementById('orderDetails');
+            const confirmOrderButton = document.getElementById('confirmOrderButton');
+            const invoiceDownloadButton = document.getElementById('invoiceDownloadButton');
 
             orderDetails.style.display = 'none';
             orderDetails.innerHTML = '';
+            invoiceDownloadButton.style.display = 'none';
 
             if (!cartItems.length) {
                 cartContainer.innerHTML = '<div class="empty-cart">Your cart is empty. Add some delicious items from the menu.</div>';
                 cartCount.textContent = '0 items selected';
                 invoiceBox.innerHTML = '<div class="invoice-row"><span>Subtotal</span><span>₹0</span></div><div class="invoice-total"><span>Total</span><span>₹0</span></div>';
+                confirmOrderButton.disabled = true;
                 return;
             }
 
@@ -107,6 +112,7 @@
                 <div class="invoice-row"><span>Service</span><span>₹0</span></div>
                 <div class="invoice-total"><span>Total</span><span>₹${finalTotal}</span></div>
             `;
+            confirmOrderButton.disabled = false;
 
             cartContainer.innerHTML = cartItems.map((item, index) => `
                 <div class="cart-item">
@@ -165,12 +171,185 @@
             renderCart();
         }
 
+        function generatePdfInvoice(orderData, userName, earnedPoints) {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert('PDF library failed to load. Please refresh the page and try again.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 45;
+            const contentWidth = pageWidth - margin * 2;
+
+            const subtotal = orderData.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+            const discount = Number(orderData.discount || 0);
+            const totalPaid = Number(orderData.total !== undefined ? orderData.total : subtotal - discount);
+
+            // ---- Background ----
+            doc.setFillColor(250, 247, 244);
+            doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+            // ---- Header bar ----
+            doc.setFillColor(58, 40, 28);
+            doc.rect(0, 0, pageWidth, 80, 'F');
+
+            doc.setTextColor(255, 248, 240);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(24);
+            doc.text('The Corner Cup', margin, 50);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('Premium Cafe & Bakery', margin, 66);
+
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.text('INVOICE', pageWidth - margin, 52, { align: 'right' });
+
+            // ---- Meta block ----
+            const metaY = 108;
+            doc.setTextColor(50, 35, 22);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Bill To:', margin, metaY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(userName, margin, metaY + 15);
+
+            const rightX = pageWidth - margin;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Date:', rightX - 140, metaY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(orderData.date, rightX - 100, metaY);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('Order ID:', rightX - 140, metaY + 15);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(Date.now()), rightX - 90, metaY + 15);
+
+            // ---- Divider ----
+            doc.setDrawColor(200, 185, 168);
+            doc.setLineWidth(0.5);
+            doc.line(margin, metaY + 30, pageWidth - margin, metaY + 30);
+
+            // ---- Table header ----
+            const tHeadY = metaY + 56;
+            doc.setFillColor(58, 40, 28);
+            doc.rect(margin, tHeadY - 14, contentWidth, 22, 'F');
+
+            doc.setTextColor(255, 248, 240);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+
+            const colItem = margin + 6;
+            const colQty = margin + contentWidth * 0.55;
+            const colPrice = margin + contentWidth * 0.70;
+            const colTotal = margin + contentWidth - 4;
+
+            doc.text('Item', colItem, tHeadY);
+            doc.text('Qty', colQty, tHeadY);
+            doc.text('Unit Price', colPrice, tHeadY);
+            doc.text('Total', colTotal, tHeadY, { align: 'right' });
+
+            // ---- Table rows ----
+            doc.setTextColor(50, 35, 22);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+
+            let rowY = tHeadY + 20;
+            let rowAlt = false;
+
+            orderData.items.forEach((item) => {
+                const itemTotal = item.price * item.quantity;
+                if (rowAlt) {
+                    doc.setFillColor(244, 238, 232);
+                    doc.rect(margin, rowY - 12, contentWidth, 20, 'F');
+                }
+                rowAlt = !rowAlt;
+                doc.text(item.name, colItem, rowY);
+                doc.text(String(item.quantity), colQty, rowY);
+                doc.text('Rs. ' + item.price, colPrice, rowY);
+                doc.text('Rs. ' + itemTotal, colTotal, rowY, { align: 'right' });
+                rowY += 20;
+            });
+
+            // ---- Summary divider ----
+            rowY += 10;
+            doc.setDrawColor(200, 185, 168);
+            doc.line(margin, rowY, pageWidth - margin, rowY);
+            rowY += 20;
+
+            const sumLabelX = pageWidth - margin - 130;
+            const sumValueX = pageWidth - margin;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(50, 35, 22);
+            doc.text('Subtotal:', sumLabelX, rowY);
+            doc.text('Rs. ' + subtotal, sumValueX, rowY, { align: 'right' });
+            rowY += 17;
+
+            if (discount > 0) {
+                doc.setTextColor(40, 110, 40);
+                doc.text('Points Redeemed:', sumLabelX, rowY);
+                doc.text('-Rs. ' + discount, sumValueX, rowY, { align: 'right' });
+                doc.setTextColor(50, 35, 22);
+                rowY += 17;
+            }
+
+            // Highlighted total row
+            doc.setFillColor(58, 40, 28);
+            doc.rect(sumLabelX - 8, rowY - 13, sumValueX - sumLabelX + 20, 22, 'F');
+            doc.setTextColor(255, 248, 240);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Total Paid:', sumLabelX, rowY);
+            doc.text('Rs. ' + totalPaid, sumValueX, rowY, { align: 'right' });
+            rowY += 22;
+
+            // Points
+            doc.setTextColor(40, 110, 40);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text('Points Earned: +' + earnedPoints + ' pts', margin, rowY + 14);
+
+            // ---- Footer ----
+            doc.setDrawColor(200, 185, 168);
+            doc.line(margin, pageHeight - 58, pageWidth - margin, pageHeight - 58);
+
+            doc.setTextColor(130, 105, 82);
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9.5);
+            doc.text('Thank you for visiting The Corner Cup  -  We hope to see you again!', pageWidth / 2, pageHeight - 40, { align: 'center' });
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.text('This is a computer-generated invoice and does not require a signature.', pageWidth / 2, pageHeight - 24, { align: 'center' });
+
+            doc.save('corner-cup-invoice-' + Date.now() + '.pdf');
+        }
+
+        function downloadInvoice() {
+            const invoiceData = window.currentInvoiceData;
+            if (!invoiceData) {
+                alert('Invoice is available after a successful payment.');
+                return;
+            }
+            generatePdfInvoice(invoiceData.orderData, invoiceData.userName, invoiceData.earnedPoints);
+        }
+
+        function buildPaymentQrUrl(amount) {
+            const upiId = 'mayankdole7177@okicici';
+            const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent('The Corner Cup')}&am=${Number(amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent('Corner Cup Purchase')}`;
+            return `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(upiLink)}`;
+        }
+
         async function checkout() {
             const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
             const message = document.getElementById('successMessage');
             const orderDetails = document.getElementById('orderDetails');
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-
             if (!cartItems.length) {
                 message.style.display = 'block';
                 message.textContent = 'Your cart is empty. Add items first.';
@@ -184,15 +363,54 @@
             const appliedPoints = window.currentAppliedPoints || 0;
             const finalTotal = total - appliedPoints;
             const earnedPoints = Math.floor(finalTotal / 10);
+            window.pendingOrderData = { cartItems, quantityTotal, finalTotal, appliedPoints, earnedPoints };
+            document.getElementById('confirmOrderButton').disabled = true;
+            message.style.display = 'block';
+            message.textContent = 'Complete the payment below. The order will not be placed until payment is confirmed.';
+            orderDetails.style.display = 'block';
+            orderDetails.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;">
+                    <h4 style="margin:0;">Payment required</h4>
+                    <p style="margin:0;"><strong>Amount: ₹${finalTotal}</strong></p>
+                    <img src="${buildPaymentQrUrl(finalTotal)}" alt="UPI payment QR for ₹${finalTotal}" style="width:220px;height:220px;background:white;padding:8px;border-radius:12px;">
+                    <p style="margin:0;">UPI ID: <strong>mayankdole7177@okicici</strong></p>
+                    <p style="margin:0;color:#8c6042;">Scan with your UPI app and wait for the successful payment message.</p>
+                    <label style="display:flex;gap:8px;align-items:flex-start;text-align:left;">
+                        <input id="paymentConfirmed" type="checkbox">
+                        <span>I received a successful payment confirmation.</span>
+                    </label>
+                    <button class="btn" type="button" onclick="finalizePayment()">Confirm Successful Payment</button>
+                </div>
+            `;
+            return;
+        }
 
+        async function finalizePayment() {
+            const paymentConfirmed = document.getElementById('paymentConfirmed');
+            const pendingOrder = window.pendingOrderData;
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!pendingOrder || !paymentConfirmed || !paymentConfirmed.checked) {
+                alert('The order is not confirmed because payment has not been marked successful.');
+                return;
+            }
+            if (!currentUser) {
+                alert('Please log in before placing an order.');
+                return;
+            }
+
+            const { cartItems, quantityTotal, finalTotal, appliedPoints, earnedPoints } = pendingOrder;
+            const orderData = {
+                date: new Date().toLocaleString(),
+                total: finalTotal,
+                discount: appliedPoints,
+                earnedPoints,
+                items: cartItems
+            };
+            window.currentInvoiceData = { orderData, userName: currentUser.name, earnedPoints };
+            // Start the download while the click gesture is still active; browsers
+            // can block downloads triggered after an awaited network request.
+            downloadInvoice();
             if (currentUser) {
-                const orderData = {
-                    date: new Date().toLocaleString(),
-                    total: finalTotal,
-                    discount: appliedPoints,
-                    items: cartItems
-                };
-
                 const apiBaseUrl = '';
 
                 try {
@@ -225,24 +443,38 @@
                 }
             } else {
                 alert("Please log in to log your order and earn points!");
+                return;
             }
 
+            window.pendingOrderData = null;
             window.currentAppliedPoints = 0;
             localStorage.removeItem('cafeCart');
             renderCart();
 
             message.style.display = 'block';
             message.textContent = '🎉 Order placed successfully!';
+            document.getElementById('invoiceDownloadButton').style.display = 'inline-block';
 
             orderDetails.style.display = 'block';
             orderDetails.innerHTML = `
-                <h4>Order details</h4>
-                <p>${quantityTotal} item${quantityTotal > 1 ? 's' : ''} ordered successfully.</p>
-                <p><strong>Total paid:</strong> ₹${finalTotal} ${appliedPoints > 0 ? `(₹${appliedPoints} discount applied)` : ''}</p>
-                ${currentUser ? `<p style="color: green; font-weight: bold;">+${earnedPoints} Points Earned</p>` : ''}
-                <ul>
-                    ${cartItems.map(item => `<li>${item.quantity}× ${item.name} = ₹${item.price * item.quantity}</li>`).join('')}
-                </ul>
+                <div style="display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center;">
+                    <h4 style="margin: 0;">Order details</h4>
+                    <p style="margin: 0;">${quantityTotal} item${quantityTotal > 1 ? 's' : ''} ordered successfully.</p>
+                    <p style="margin: 0;"><strong>Total paid:</strong> ₹${finalTotal} ${appliedPoints > 0 ? `(₹${appliedPoints} discount applied)` : ''}</p>
+                    ${currentUser ? `<p style="margin: 0; color: green; font-weight: bold;">+${earnedPoints} Points Earned</p>` : ''}
+                    <div style="background: #f5f0eb; border-radius: 16px; padding: 18px; width: 100%; max-width: 420px; box-sizing: border-box; border: 1px solid #e3d4c3;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px;">
+                            <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #1b9bd7, #0d627a); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1rem;">₹</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #2b1d15;">₹${finalTotal}</div>
+                        </div>
+                        <img src="${buildPaymentQrUrl(finalTotal)}" alt="UPI payment QR" style="width: 100%; max-width: 300px; height: auto; border-radius: 12px; background: white; padding: 8px; display: block; margin: 0 auto 10px;">
+                        <div style="font-size: 1.05rem; color: #2a1d14; margin-top: 8px;">UPI ID: <strong>mayankdole7177@okicici</strong></div>
+                        <div style="margin-top: 8px; font-size: 0.95rem; color: #6b4d3f;">Scan to pay with any UPI app</div>
+                    </div>
+                    <ul style="margin: 0; padding-left: 18px; text-align: left; width: 100%;">
+                        ${cartItems.map(item => `<li>${item.quantity}× ${item.name} = ₹${item.price * item.quantity}</li>`).join('')}
+                    </ul>
+                </div>
             `;
         }
 
