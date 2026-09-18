@@ -1,0 +1,53 @@
+body {
+    background: #f8f2ec;
+}
+
+.admin-shell {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.admin-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 25px #22150d14;
+}
+
+.admin-form {
+    max-width: 420px;
+    margin: 80px auto;
+}
+
+.admin-form input,
+.admin-form button {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 8px 0;
+    padding: 12px;
+}
+
+.orders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.order-card {
+    border: 1px solid #eadfce;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+}
+
+.order-card select {
+    padding: 8px;
+    margin-top: 10px;
+}
+
+.error {
+    color: #a32626;
+    min-height: 24px;
+}

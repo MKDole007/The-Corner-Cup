@@ -5,16 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Corner Cup | Admin Orders</title>
     <link rel="stylesheet" href="../style.css">
-    <style>
-        body { background: #f8f2ec; }
-        .admin-shell { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
-        .admin-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px #22150d14; }
-        .admin-form { max-width: 420px; margin: 80px auto; }
-        .admin-form input, .admin-form button { box-sizing: border-box; width: 100%; margin: 8px 0; padding: 12px; }
-        .order-card { border: 1px solid #eadfce; border-radius: 12px; padding: 16px; margin: 12px 0; }
-        .order-card select { padding: 8px; margin-top: 10px; }
-        .error { color: #a32626; min-height: 24px; }
-    </style>
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
     <main class="admin-shell">
@@ -31,7 +22,7 @@
         </section>
 
         <section id="ordersCard" class="admin-card" hidden>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <div class="orders-header">
                 <h1>Received Orders</h1>
                 <button id="logoutButton" class="btn" type="button">Log out</button>
             </div>
@@ -45,11 +36,12 @@
         const loginError = document.getElementById('loginError');
         const ordersMessage = document.getElementById('ordersMessage');
         const ordersContainer = document.getElementById('orders');
+        const apiBaseUrl = window.location.port === '3019' ? '' : 'http://localhost:3019';
         let adminToken = sessionStorage.getItem('adminToken');
 
         async function adminRequest(url, options = {}) {
             const headers = { ...(options.headers || {}), Authorization: `Bearer ${adminToken}` };
-            const response = await fetch(url, { ...options, headers });
+            const response = await fetch(`${apiBaseUrl}${url}`, { ...options, headers });
             if (response.status === 401) {
                 sessionStorage.removeItem('adminToken');
                 adminToken = null;
@@ -100,7 +92,7 @@
             let response;
             let result;
             try {
-                response = await fetch('/api/admin/login', {
+                response = await fetch(`${apiBaseUrl}/api/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -110,7 +102,7 @@
                 });
                 result = await response.json();
             } catch (error) {
-                loginError.textContent = 'Cannot connect to the server. Start it with: npm start';
+                loginError.textContent = 'Cannot connect to the server.';
                 return;
             }
             if (!response.ok) {
