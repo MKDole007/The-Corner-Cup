@@ -84,6 +84,11 @@
             summary.append(total, ` · ${new Date(order.createdAt).toLocaleString()}`);
             card.appendChild(summary);
 
+            const status = document.createElement('p');
+            status.className = 'order-status';
+            status.textContent = `Status: ${order.status}`;
+            card.appendChild(status);
+
             const label = document.createElement('label');
             label.textContent = 'Status: ';
             const select = document.createElement('select');
@@ -119,12 +124,22 @@
         }
 
         async function updateStatus(select) {
-            const response = await adminRequest(`/api/admin/orders/${select.dataset.orderId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: select.value })
-            });
-            if (!response.ok) alert('Unable to update order status.');
+            const card = select.closest('.order-card');
+            const status = card.querySelector('.order-status');
+            const previousStatus = status.textContent.replace('Status: ', '');
+            try {
+                const response = await adminRequest(`/api/admin/orders/${select.dataset.orderId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: select.value })
+                });
+                if (!response.ok) throw new Error('Unable to update order status.');
+                status.textContent = `Status: ${select.value}`;
+            } catch (error) {
+                select.value = previousStatus;
+                status.textContent = `Status: ${previousStatus}`;
+                alert(error.message);
+            }
         }
 
         document.getElementById('loginForm').addEventListener('submit', async event => {

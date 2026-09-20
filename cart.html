@@ -59,6 +59,10 @@
                 <button class="btn" id="invoiceDownloadButton" type="button" onclick="downloadInvoice()" style="display:none; margin-top: 12px;">Download Invoice PDF</button>
             </div>
         </div>
+        <section class="order-status-section" aria-labelledby="orderStatusTitle">
+            <h2 id="orderStatusTitle" class="section-title">Your Orders</h2>
+            <div id="orderStatusList" class="order-status-list"></div>
+        </section>
     </main>
 
     <footer>
@@ -67,6 +71,64 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
+        const cartApiBaseUrl = window.location.port === '3019' ? '' : 'http://localhost:3019';
+
+        function createOrderStatusCard(order, index) {
+            const card = document.createElement('article');
+            card.className = 'order-status-card';
+
+            const heading = document.createElement('h3');
+            heading.textContent = `Order #${order.orderId || index + 1}`;
+            card.appendChild(heading);
+
+            const status = document.createElement('p');
+            status.className = `customer-order-status status-${order.status || 'new'}`;
+            status.textContent = `Status: ${(order.status || 'new').replace('_', ' ')}`;
+            card.appendChild(status);
+
+            const date = document.createElement('p');
+            date.textContent = `Placed: ${order.date || 'Recently'}`;
+            card.appendChild(date);
+
+            const items = document.createElement('p');
+            items.textContent = (order.items || [])
+                .map(item => `${item.quantity}x ${item.name}`)
+                .join(', ');
+            card.appendChild(items);
+
+            const total = document.createElement('strong');
+            total.textContent = `Total: Rs.${order.total}`;
+            card.appendChild(total);
+            return card;
+        }
+
+        async function loadOrderStatuses() {
+            const orderStatusList = document.getElementById('orderStatusList');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            orderStatusList.replaceChildren();
+
+            if (!currentUser) {
+                orderStatusList.textContent = 'Log in to see your order status.';
+                return;
+            }
+
+            orderStatusList.textContent = 'Loading order status...';
+            try {
+                const response = await fetch(`${cartApiBaseUrl}/api/orders/status?email=${encodeURIComponent(currentUser.email)}`);
+                if (!response.ok) throw new Error('Unable to load order status.');
+                const result = await response.json();
+                orderStatusList.replaceChildren();
+                const orders = [...(result.orders || [])].reverse();
+                if (!orders.length) {
+                    orderStatusList.textContent = 'No previous orders yet.';
+                    return;
+                }
+                orders.forEach((order, index) => orderStatusList.appendChild(createOrderStatusCard(order, orders.length - index)));
+            } catch (error) {
+                orderStatusList.textContent = 'Order status is temporarily unavailable.';
+            }
+        }
+
         function renderCart() {
             const cartItems = JSON.parse(localStorage.getItem('cafeCart') || '[]');
             const cartContainer = document.getElementById('cartItems');
@@ -443,6 +505,7 @@
             window.currentAppliedPoints = 0;
             localStorage.removeItem('cafeCart');
             renderCart();
+            loadOrderStatuses();
 
             message.style.display = 'block';
             message.textContent = '🎉 Order placed successfully!';
@@ -471,7 +534,10 @@
             `;
         }
 
-        document.addEventListener('DOMContentLoaded', renderCart);
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCart();
+            loadOrderStatuses();
+        });
     </script>
     <script src="app.js"></script>
 </body>

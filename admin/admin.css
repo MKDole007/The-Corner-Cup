@@ -53,6 +53,12 @@ body {
     margin-top: 10px;
 }
 
+.order-status {
+    color: #6b3e23;
+    font-weight: 800;
+    text-transform: capitalize;
+}
+
 .error {
     color: #a32626;
     min-height: 24px;

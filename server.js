@@ -132,6 +132,18 @@ app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
             { new: true }
         ).lean()
         if (!order) return res.status(404).json({ message: 'Order not found.' })
+        const user = await User.findOne({ email: order.customerEmail })
+        if (user) {
+            const orderId = order._id.toString()
+            const matchingOrder = user.orders.find(savedOrder =>
+                savedOrder.orderId === orderId || savedOrder.date === order.orderData.date
+            )
+            if (matchingOrder) {
+                matchingOrder.status = order.status
+                user.markModified('orders')
+                await user.save()
+            }
+        }
         res.json(order)
     } catch (error) {
         res.status(400).json({ message: 'Invalid order ID.' })
@@ -227,21 +239,36 @@ app.post('/api/order', async (req, res) => {
             subtotal,
             discount: appliedPoints,
             total,
-            date: new Date().toISOString()
+            date: new Date().toISOString(),
+            status: 'new'
         }
 
         user.points = updatedPoints
-        user.orders.push(normalizedOrder)
-        await user.save()
-        await Order.create({
+        const order = await Order.create({
             customerEmail: user.email,
             customerName: user.name,
             orderData: normalizedOrder
         })
+        normalizedOrder.orderId = order._id.toString()
+        user.orders.push(normalizedOrder)
+        await user.save()
 
         res.json({ name: user.name, email: user.email, orders: user.orders, points: user.points })
     } catch (error) {
         res.status(500).json({ message: 'Unable to process order.' })
+    }
+})
+
+app.get('/api/orders/status', async (req, res) => {
+    const email = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : ''
+    if (!email) return res.status(400).json({ message: 'Email is required.' })
+
+    try {
+        const user = await User.findOne({ email }).select('orders points').lean()
+        if (!user) return res.status(404).json({ message: 'User not found.' })
+        res.json({ orders: user.orders, points: user.points })
+    } catch (error) {
+        res.status(500).json({ message: 'Unable to load order statuses.' })
     }
 })
 

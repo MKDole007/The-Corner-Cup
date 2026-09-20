@@ -91,6 +91,7 @@
                     <div style="border: 1px solid #eadfce; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fffaf5;">
                         <p><strong>Order #${currentUser.orders.length - idx}</strong></p>
                         <p><strong>Date:</strong> ${order.date}</p>
+                        <p><strong>Status:</strong> ${(order.status || 'new').replace('_', ' ')}</p>
                         <p><strong>Total:</strong> &#8377;${order.total} ${(order.discount || 0) > 0 ? '<span style="color: green; font-size:0.9rem;">(&#8377;' + order.discount + ' discount applied)</span>' : ''}</p>
                         <p><strong>Points Earned:</strong> +${Math.floor(order.total / 10)}</p>
                         <ul style="padding-left: 20px; margin-top: 8px;">

@@ -805,6 +805,39 @@ footer {
     font-weight: 600;
 }
 
+.order-status-section {
+    margin-top: 48px;
+}
+
+.order-status-list {
+    display: grid;
+    gap: 16px;
+}
+
+.order-status-card {
+    background: #fff;
+    border: 1px solid #eadfce;
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 8px 20px rgba(34, 21, 13, 0.06);
+}
+
+.order-status-card h3 {
+    color: #6b3e23;
+    margin-bottom: 8px;
+}
+
+.customer-order-status {
+    font-weight: 800;
+    text-transform: capitalize;
+}
+
+.status-new { color: #8c6042; }
+.status-preparing { color: #b36b00; }
+.status-ready { color: #147a45; }
+.status-completed { color: #1769aa; }
+.status-cancelled { color: #a32626; }
+
 
 
 @media (max-width: 900px) {
