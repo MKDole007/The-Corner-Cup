@@ -12,7 +12,6 @@
         <section id="loginCard" class="admin-card admin-form">
             <h1>Admin Orders</h1>
             <p>Private staff area</p>
-            <p><strong>Development login:</strong><br>admin@cornercup.local / admin123</p>
             <form id="loginForm">
                 <input id="email" type="email" placeholder="Admin email" required>
                 <input id="password" type="password" placeholder="Admin password" required>
@@ -24,7 +23,10 @@
         <section id="ordersCard" class="admin-card" hidden>
             <div class="orders-header">
                 <h1>Received Orders</h1>
-                <button id="logoutButton" class="btn" type="button">Log out</button>
+                <div class="admin-actions">
+                    <button id="refreshButton" class="btn" type="button">Refresh</button>
+                    <button id="logoutButton" class="btn" type="button">Log out</button>
+                </div>
             </div>
             <p id="ordersMessage"></p>
             <div id="orders"></div>
@@ -56,25 +58,64 @@
             ordersCard.hidden = true;
         }
 
+        function createOrderCard(order) {
+            const card = document.createElement('article');
+            card.className = 'order-card';
+
+            const orderId = document.createElement('strong');
+            orderId.textContent = `Order ${order._id}`;
+            card.appendChild(orderId);
+
+            const customer = document.createElement('p');
+            const customerName = document.createElement('strong');
+            customerName.textContent = order.customerName;
+            customer.append(customerName, ` — ${order.customerEmail}`);
+            card.appendChild(customer);
+
+            const items = document.createElement('p');
+            items.textContent = (order.orderData.items || [])
+                .map(item => `${item.quantity}x ${item.name}`)
+                .join(', ');
+            card.appendChild(items);
+
+            const summary = document.createElement('p');
+            const total = document.createElement('strong');
+            total.textContent = `Total: Rs.${order.orderData.total}`;
+            summary.append(total, ` · ${new Date(order.createdAt).toLocaleString()}`);
+            card.appendChild(summary);
+
+            const label = document.createElement('label');
+            label.textContent = 'Status: ';
+            const select = document.createElement('select');
+            select.dataset.orderId = order._id;
+            select.addEventListener('change', () => updateStatus(select));
+            ['new', 'preparing', 'ready', 'completed', 'cancelled'].forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = status;
+                option.selected = status === order.status;
+                select.appendChild(option);
+            });
+            label.appendChild(select);
+            card.appendChild(label);
+
+            return card;
+        }
+
         async function loadOrders() {
+            ordersMessage.textContent = 'Loading orders...';
             const response = await adminRequest('/api/admin/orders');
             if (!response.ok) throw new Error('Unable to load orders.');
             const orders = await response.json();
             ordersMessage.textContent = `${orders.length} order${orders.length === 1 ? '' : 's'} received`;
-            ordersContainer.innerHTML = orders.length ? orders.map(order => `
-                <article class="order-card">
-                    <strong>Order ${order._id}</strong>
-                    <p><strong>${order.customerName}</strong> — ${order.customerEmail}</p>
-                    <p>${order.orderData.items.map(item => `${item.quantity}× ${item.name}`).join(', ')}</p>
-                    <p><strong>Total: ₹${order.orderData.total}</strong> · ${new Date(order.createdAt).toLocaleString()}</p>
-                    <label>Status:
-                        <select data-order-id="${order._id}" onchange="updateStatus(this)">
-                            ${['new', 'preparing', 'ready', 'completed', 'cancelled'].map(status =>
-                                `<option value="${status}" ${status === order.status ? 'selected' : ''}>${status}</option>`).join('')}
-                        </select>
-                    </label>
-                </article>
-            `).join('') : '<p>No orders received yet.</p>';
+            ordersContainer.replaceChildren();
+            if (!orders.length) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.textContent = 'No orders received yet.';
+                ordersContainer.appendChild(emptyMessage);
+                return;
+            }
+            orders.forEach(order => ordersContainer.appendChild(createOrderCard(order)));
         }
 
         async function updateStatus(select) {
@@ -121,6 +162,10 @@
             sessionStorage.removeItem('adminToken');
             adminToken = null;
             showLogin();
+        });
+
+        document.getElementById('refreshButton').addEventListener('click', () => {
+            loadOrders().catch(error => { ordersMessage.textContent = error.message; });
         });
 
         if (adminToken) {

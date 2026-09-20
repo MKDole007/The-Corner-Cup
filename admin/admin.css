@@ -35,6 +35,12 @@ body {
     gap: 12px;
 }
 
+.admin-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .order-card {
     border: 1px solid #eadfce;
     border-radius: 12px;
