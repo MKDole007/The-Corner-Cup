@@ -129,7 +129,7 @@ app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
         const order = await Order.findByIdAndUpdate(
             req.params.id,
             { status: req.body.status },
-            { new: true }
+            { returnDocument: 'after' }
         ).lean()
         if (!order) return res.status(404).json({ message: 'Order not found.' })
         const user = await User.findOne({ email: order.customerEmail })
