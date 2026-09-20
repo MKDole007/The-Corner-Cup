@@ -61,6 +61,11 @@ header {
     gap: 20px;
 }
 
+.header-row > .logo,
+.header-row > nav {
+    min-width: 0;
+}
+
 nav {
     display: flex;
     align-items: center;
@@ -802,7 +807,7 @@ footer {
 
 
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
     header {
         padding: 12px 0;
     }
@@ -825,6 +830,11 @@ footer {
     .nav-links {
         justify-content: center;
         gap: 8px;
+    }
+
+    .header-row > nav {
+        width: 100%;
+        justify-content: center;
     }
 
     header .nav-links a {
