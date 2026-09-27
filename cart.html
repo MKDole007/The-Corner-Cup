@@ -428,7 +428,7 @@
             window.pendingOrderData = { cartItems, quantityTotal, finalTotal, appliedPoints, earnedPoints };
             document.getElementById('confirmOrderButton').disabled = true;
             message.style.display = 'block';
-            message.textContent = 'Complete the payment below. The order will not be placed until payment is confirmed.';
+            message.textContent = 'Complete the payment below, then place your order.';
             orderDetails.style.display = 'block';
             orderDetails.innerHTML = `
                 <div style="display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;">
@@ -437,22 +437,17 @@
                     <img src="${buildPaymentQrUrl(finalTotal)}" alt="UPI payment QR for ₹${finalTotal}" style="width:220px;height:220px;background:white;padding:8px;border-radius:12px;">
                     <p style="margin:0;">UPI ID: <strong>mayankdole7177@okicici</strong></p>
                     <p style="margin:0;color:#8c6042;">Scan with your UPI app and wait for the successful payment message.</p>
-                    <label style="display:flex;gap:8px;align-items:flex-start;text-align:left;">
-                        <input id="paymentConfirmed" type="checkbox">
-                        <span>I received a successful payment confirmation.</span>
-                    </label>
-                    <button class="btn" type="button" onclick="finalizePayment()">Confirm Successful Payment</button>
+                    <button class="btn" type="button" onclick="finalizePayment()">Submit Order</button>
                 </div>
             `;
             return;
         }
 
         async function finalizePayment() {
-            const paymentConfirmed = document.getElementById('paymentConfirmed');
             const pendingOrder = window.pendingOrderData;
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            if (!pendingOrder || !paymentConfirmed || !paymentConfirmed.checked) {
-                alert('The order is not confirmed because payment has not been marked successful.');
+            if (!pendingOrder) {
+                alert('Please start checkout before placing the order.');
                 return;
             }
             if (!currentUser) {

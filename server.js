@@ -61,7 +61,7 @@ const orderSchema = new mongoose.Schema({
     customerEmail: { type: String, required: true, lowercase: true, trim: true },
     customerName: { type: String, required: true, trim: true },
     orderData: { type: mongoose.Schema.Types.Mixed, required: true },
-    status: { type: String, enum: ['new', 'preparing', 'ready', 'completed', 'cancelled'], default: 'new' }
+    status: { type: String, enum: ['new', 'payment_successful', 'payment_not_received', 'preparing', 'ready', 'completed', 'cancelled'], default: 'new' }
 }, { timestamps: true })
 const Order = mongoose.model('Order', orderSchema)
 
@@ -121,7 +121,7 @@ app.get('/api/admin/orders', requireAdmin, async (req, res) => {
 })
 
 app.patch('/api/admin/orders/:id', requireAdmin, async (req, res) => {
-    const allowedStatuses = ['new', 'preparing', 'ready', 'completed', 'cancelled']
+    const allowedStatuses = ['new', 'payment_successful', 'payment_not_received', 'preparing', 'ready', 'completed', 'cancelled']
     if (!allowedStatuses.includes(req.body.status)) {
         return res.status(400).json({ message: 'Invalid order status.' })
     }

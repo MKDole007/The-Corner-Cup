@@ -39,7 +39,15 @@
         const ordersMessage = document.getElementById('ordersMessage');
         const ordersContainer = document.getElementById('orders');
         const apiBaseUrl = window.location.port === '3019' ? '' : 'http://localhost:3019';
+        const paymentPromptedOrders = new Set(JSON.parse(sessionStorage.getItem('paymentPromptedOrders') || '[]'));
         let adminToken = sessionStorage.getItem('adminToken');
+        let orderRefreshTimer;
+
+        function formatStatus(status) {
+            if (status === 'payment_successful') return 'Payment Successful';
+            if (status === 'payment_not_received') return 'Payment Not Received';
+            return status;
+        }
 
         async function adminRequest(url, options = {}) {
             const headers = { ...(options.headers || {}), Authorization: `Bearer ${adminToken}` };
@@ -54,8 +62,16 @@
         }
 
         function showLogin() {
+            clearInterval(orderRefreshTimer);
             loginCard.hidden = false;
             ordersCard.hidden = true;
+        }
+
+        function startOrderRefresh() {
+            clearInterval(orderRefreshTimer);
+            orderRefreshTimer = setInterval(() => {
+                loadOrders().catch(error => { ordersMessage.textContent = error.message; });
+            }, 15000);
         }
 
         function createOrderCard(order) {
@@ -86,7 +102,7 @@
 
             const status = document.createElement('p');
             status.className = 'order-status';
-            status.textContent = `Status: ${order.status}`;
+            status.textContent = `Status: ${formatStatus(order.status)}`;
             card.appendChild(status);
 
             const label = document.createElement('label');
@@ -94,17 +110,30 @@
             const select = document.createElement('select');
             select.dataset.orderId = order._id;
             select.addEventListener('change', () => updateStatus(select));
-            ['new', 'preparing', 'ready', 'completed', 'cancelled'].forEach(status => {
+            ['new', 'payment_successful', 'payment_not_received', 'preparing', 'ready', 'completed', 'cancelled'].forEach(status => {
                 const option = document.createElement('option');
                 option.value = status;
-                option.textContent = status;
+                option.textContent = formatStatus(status);
                 option.selected = status === order.status;
                 select.appendChild(option);
             });
             label.appendChild(select);
             card.appendChild(label);
+            card.dataset.orderStatus = order.status;
 
             return card;
+        }
+
+        async function promptForPayment(order, card) {
+            if (order.status !== 'new' || paymentPromptedOrders.has(order._id)) return;
+
+            paymentPromptedOrders.add(order._id);
+            sessionStorage.setItem('paymentPromptedOrders', JSON.stringify([...paymentPromptedOrders]));
+            const select = card.querySelector('select');
+            select.value = window.confirm(`Payment received for Order ${order._id}?`)
+                ? 'payment_successful'
+                : 'payment_not_received';
+            await updateStatus(select);
         }
 
         async function loadOrders() {
@@ -120,13 +149,17 @@
                 ordersContainer.appendChild(emptyMessage);
                 return;
             }
-            orders.forEach(order => ordersContainer.appendChild(createOrderCard(order)));
+            for (const order of orders) {
+                const card = createOrderCard(order);
+                ordersContainer.appendChild(card);
+                await promptForPayment(order, card);
+            }
         }
 
         async function updateStatus(select) {
             const card = select.closest('.order-card');
             const status = card.querySelector('.order-status');
-            const previousStatus = status.textContent.replace('Status: ', '');
+            const previousStatus = card.dataset.orderStatus;
             try {
                 const response = await adminRequest(`/api/admin/orders/${select.dataset.orderId}`, {
                     method: 'PATCH',
@@ -134,10 +167,11 @@
                     body: JSON.stringify({ status: select.value })
                 });
                 if (!response.ok) throw new Error('Unable to update order status.');
-                status.textContent = `Status: ${select.value}`;
+                card.dataset.orderStatus = select.value;
+                status.textContent = `Status: ${formatStatus(select.value)}`;
             } catch (error) {
                 select.value = previousStatus;
-                status.textContent = `Status: ${previousStatus}`;
+                status.textContent = `Status: ${formatStatus(previousStatus)}`;
                 alert(error.message);
             }
         }
@@ -170,6 +204,7 @@
             loginCard.hidden = true;
             ordersCard.hidden = false;
             await loadOrders();
+            startOrderRefresh();
         });
 
         document.getElementById('logoutButton').addEventListener('click', async () => {
@@ -186,7 +221,9 @@
         if (adminToken) {
             loginCard.hidden = true;
             ordersCard.hidden = false;
-            loadOrders().catch(error => { ordersMessage.textContent = error.message; });
+            loadOrders()
+                .then(startOrderRefresh)
+                .catch(error => { ordersMessage.textContent = error.message; });
         }
     </script>
 </body>

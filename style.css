@@ -833,6 +833,8 @@ footer {
 }
 
 .status-new { color: #8c6042; }
+.status-payment_successful { color: #147a45; }
+.status-payment_not_received { color: #a32626; }
 .status-preparing { color: #b36b00; }
 .status-ready { color: #147a45; }
 .status-completed { color: #1769aa; }
