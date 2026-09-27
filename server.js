@@ -250,10 +250,18 @@ app.post('/api/order', async (req, res) => {
             orderData: normalizedOrder
         })
         normalizedOrder.orderId = order._id.toString()
+        order.orderData = normalizedOrder
+        await order.save()
         user.orders.push(normalizedOrder)
         await user.save()
 
-        res.json({ name: user.name, email: user.email, orders: user.orders, points: user.points })
+        res.json({
+            name: user.name,
+            email: user.email,
+            orders: user.orders,
+            points: user.points,
+            orderId: normalizedOrder.orderId
+        })
     } catch (error) {
         res.status(500).json({ message: 'Unable to process order.' })
     }

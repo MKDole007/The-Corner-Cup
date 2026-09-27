@@ -289,7 +289,7 @@
             doc.setFont('helvetica', 'bold');
             doc.text('Order ID:', rightX - 140, metaY + 15);
             doc.setFont('helvetica', 'normal');
-            doc.text(String(Date.now()), rightX - 90, metaY + 15);
+            doc.text(String(orderData.orderId || 'Pending'), rightX - 90, metaY + 15);
 
             // ---- Divider ----
             doc.setDrawColor(200, 185, 168);
@@ -389,7 +389,7 @@
             doc.setFontSize(8.5);
             doc.text('This is a computer-generated invoice and does not require a signature.', pageWidth / 2, pageHeight - 24, { align: 'center' });
 
-            doc.save('corner-cup-invoice-' + Date.now() + '.pdf');
+            doc.save('corner-cup-invoice-' + (orderData.orderId || 'order') + '.pdf');
         }
 
         function downloadInvoice() {
@@ -464,9 +464,6 @@
                 items: cartItems
             };
             window.currentInvoiceData = { orderData, userName: currentUser.name, earnedPoints };
-            // Start the download while the click gesture is still active; browsers
-            // can block downloads triggered after an awaited network request.
-            downloadInvoice();
             try {
                 const response = await fetch('/api/order', {
                     method: 'POST',
@@ -491,6 +488,9 @@
 
                 const updatedUser = await response.json();
                 localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                orderData.orderId = updatedUser.orderId;
+                window.currentInvoiceData.orderData = orderData;
+                downloadInvoice();
             } catch (err) {
                 alert('Unable to connect to the server to place order.');
                 return;
