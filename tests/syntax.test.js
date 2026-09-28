@@ -12,3 +12,11 @@ for (const file of ['app.js', 'server.js']) {
         })
     })
 }
+
+test('server exposes a reusable app factory for tests and runtime startup', async () => {
+    const serverModule = require(path.join(projectRoot, 'server.js'))
+
+    assert.equal(typeof serverModule.createApp, 'function')
+    assert.equal(typeof serverModule.startServer, 'function')
+    assert.equal(typeof serverModule.app.use, 'function')
+})
