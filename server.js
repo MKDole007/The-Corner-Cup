@@ -30,7 +30,7 @@ const productCatalog = new Map([
 ])
 
 app.use(express.static(path.join(__dirname)))
-app.use(express.json())
+app.use(express.json({ limit: '2mb' }))
 app.use((req, res, next) => {
     const origin = req.headers.origin
 
@@ -57,6 +57,16 @@ const userSchema = new mongoose.Schema({
 })
 
 const User = mongoose.model('User', userSchema)
+const menuItemSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true, trim: true, maxlength: 100 },
+    category: { type: String, required: true, trim: true, maxlength: 40 },
+    description: { type: String, required: true, trim: true, maxlength: 300 },
+    ingredients: { type: String, required: true, trim: true, maxlength: 300 },
+    time: { type: String, required: true, trim: true, maxlength: 40 },
+    price: { type: Number, required: true, min: 1 },
+    image: { type: String, required: true, maxlength: 1500000 }
+}, { timestamps: true })
+const MenuItem = mongoose.model('MenuItem', menuItemSchema)
 const orderSchema = new mongoose.Schema({
     customerEmail: { type: String, required: true, lowercase: true, trim: true },
     customerName: { type: String, required: true, trim: true },
@@ -92,6 +102,18 @@ function requireAdmin(req, res, next) {
     next()
 }
 
+app.get('/api/menu-items', async (req, res) => {
+    try {
+        const menuItems = await MenuItem.find()
+            .select('name category description ingredients time price image')
+            .sort({ createdAt: -1 })
+            .lean()
+        res.json(menuItems)
+    } catch (error) {
+        res.status(500).json({ message: 'Unable to load menu items.' })
+    }
+})
+
 app.post('/api/admin/login', (req, res) => {
     if (!adminEmail || !adminPassword) {
         return res.status(503).json({ message: 'Admin login is not configured.' })
@@ -109,6 +131,43 @@ app.post('/api/admin/login', (req, res) => {
 app.post('/api/admin/logout', requireAdmin, (req, res) => {
     adminSessions.delete(req.headers.authorization.replace('Bearer ', ''))
     res.sendStatus(204)
+})
+
+app.post('/api/admin/menu-items', requireAdmin, async (req, res) => {
+    const { name, category, description, ingredients, time, price, image } = req.body
+    const normalizedName = typeof name === 'string' ? name.trim() : ''
+    const parsedPrice = Number(price)
+    const validImage = typeof image === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)
+
+    if (normalizedName.length < 2 || normalizedName.length > 100 ||
+        typeof category !== 'string' || !category.trim() || category.trim().length > 40 ||
+        typeof description !== 'string' || !description.trim() || description.trim().length > 300 ||
+        typeof ingredients !== 'string' || !ingredients.trim() || ingredients.trim().length > 300 ||
+        typeof time !== 'string' || !time.trim() || time.trim().length > 40 ||
+        !Number.isSafeInteger(parsedPrice) || parsedPrice < 1 || parsedPrice > 100000 ||
+        !validImage || image.length > 1500000) {
+        return res.status(400).json({ message: 'Enter valid item details and upload a JPEG, PNG, or WebP image under 1 MB.' })
+    }
+
+    if (productCatalog.has(normalizedName)) {
+        return res.status(409).json({ message: 'An item with this name already exists.' })
+    }
+
+    try {
+        const menuItem = await MenuItem.create({
+            name: normalizedName,
+            category: category.trim(),
+            description: description.trim(),
+            ingredients: ingredients.trim(),
+            time: time.trim(),
+            price: parsedPrice,
+            image
+        })
+        res.status(201).json(menuItem)
+    } catch (error) {
+        if (error.code === 11000) return res.status(409).json({ message: 'An item with this name already exists.' })
+        res.status(500).json({ message: 'Unable to save this menu item.' })
+    }
 })
 
 app.get('/api/admin/orders', requireAdmin, async (req, res) => {
@@ -205,10 +264,13 @@ app.post('/api/order', async (req, res) => {
 
         let items
         try {
+            const requestedNames = orderData.items.map(item => typeof item.name === 'string' ? item.name.trim() : '')
+            const customItems = await MenuItem.find({ name: { $in: requestedNames } }).select('name price').lean()
+            const customPrices = new Map(customItems.map(item => [item.name, item.price]))
             items = orderData.items.map(item => {
                 const name = typeof item.name === 'string' ? item.name.trim() : ''
                 const quantity = Number(item.quantity)
-                const price = productCatalog.get(name)
+                const price = productCatalog.get(name) || customPrices.get(name)
                 if (!price || !Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
                     throw new Error('Invalid order item.')
                 }
