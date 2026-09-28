@@ -43,6 +43,22 @@
 
     <main class="container">
         <h2 class="section-title">Signature Menu</h2>
+        <section class="menu-tools" aria-label="Find menu items">
+            <label class="menu-search" for="menuSearch">
+                <span aria-hidden="true">⌕</span>
+                <input id="menuSearch" type="search" placeholder="Search coffee, pastries, sandwiches..." autocomplete="off">
+                <kbd>Ctrl K</kbd>
+            </label>
+            <div class="menu-categories" role="group" aria-label="Filter by category">
+                <button class="category-chip is-active" type="button" data-filter="all" aria-pressed="true">All items</button>
+                <button class="category-chip" type="button" data-filter="Coffee" aria-pressed="false">Coffee</button>
+                <button class="category-chip" type="button" data-filter="Tea" aria-pressed="false">Tea</button>
+                <button class="category-chip" type="button" data-filter="Bakery" aria-pressed="false">Bakery</button>
+                <button class="category-chip" type="button" data-filter="Sandwiches" aria-pressed="false">Sandwiches</button>
+                <button class="category-chip" type="button" data-filter="Meals" aria-pressed="false">Meals</button>
+            </div>
+            <p class="menu-result-count" id="menuResultCount" aria-live="polite"></p>
+        </section>
         <div class="grid">
             <div class="card" data-category="Coffee" data-details="Boldly brewed coffee with a deep aroma and smooth finish." data-ingredients="Freshly ground coffee beans, filtered water" data-time="5 min">
                 <img class="item-image" src="images/Black coffee.png" alt="Black coffee">
@@ -51,21 +67,21 @@
                 <p><strong>₹99</strong></p>
                 <div class="card-actions"><button class="details-btn" type="button">View details</button><button class="btn" type="button">Add to Cart</button></div>
             </div>
-            <div class="card" data-category="Pastry" data-details="A soft red velvet sponge finished with a silky cream layer." data-ingredients="Red velvet sponge, cream cheese frosting" data-time="8 min">
+            <div class="card" data-category="Bakery" data-details="A soft red velvet sponge finished with a silky cream layer." data-ingredients="Red velvet sponge, cream cheese frosting" data-time="8 min">
                 <img class="item-image" src="images/Red velvet pastry.png" alt="Red velvet pastry">
                 <h3>Red velvet pastry</h3>
                 <p>Velvety soft with creamy goodness. 🍰</p>
                 <p><strong>₹199</strong></p>
                 <div class="card-actions"><button class="details-btn" type="button">View details</button><button class="btn" type="button">Add to Cart</button></div>
             </div>
-            <div class="card" data-category="Donut" data-details="A light, fluffy donut topped with a cheerful mix of colorful sprinkles." data-ingredients="Yeast dough, vanilla glaze, sprinkles" data-time="6 min">
+            <div class="card" data-category="Bakery" data-details="A light, fluffy donut topped with a cheerful mix of colorful sprinkles." data-ingredients="Yeast dough, vanilla glaze, sprinkles" data-time="6 min">
                 <img class="item-image" src="images/Sprinkle Donut.png" alt="Sprinkle Donut">
                 <h3>Sprinkle Donut</h3>
                 <p>Colorful sprinkles, delicious taste. 🍩</p>
                 <p><strong>₹149</strong></p>
                 <div class="card-actions"><button class="details-btn" type="button">View details</button><button class="btn" type="button">Add to Cart</button></div>
             </div>
-            <div class="card" data-category="Sandwich" data-details="A stacked sandwich with crisp greens, juicy fillings, and perfectly toasted bread." data-ingredients="Toasted bread, fresh greens, tomato, grilled veggies, signature sauce" data-time="10 min">
+            <div class="card" data-category="Sandwiches" data-details="A stacked sandwich with crisp greens, juicy fillings, and perfectly toasted bread." data-ingredients="Toasted bread, fresh greens, tomato, grilled veggies, signature sauce" data-time="10 min">
                 <img class="item-image" src="images/Crispy Club Sandwich.png" alt="Crispy Club Sandwich">
                 <h3>Crispy Club Sandwich</h3>
                 <p>Fresh ingredients, perfectly toasted. 🥪</p>
@@ -75,91 +91,91 @@
                     <button class="btn" type="button">Add to Cart</button>
                 </div>
             </div>
-            <div class="card">
+            <div class="card" data-category="Coffee">
                 <img class="item-image" src="images/Cappuccino.png" alt="Cappuccino">
                 <h3>Cappuccino</h3>
                 <p>Rich espresso with velvety milk foam. ☕</p>
                 <p><strong>₹299</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Coffee">
                 <img class="item-image" src="images/Cold Coffee.png" alt="Cold Coffee">
                 <h3>Cold Coffee</h3>
                 <p>A smooth and refreshing blend of chilled coffee, milk, and rich flavor in every sip. 🧋</p>
                 <p><strong>₹179</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Coffee">
                 <img class="item-image" src="images/Vanilla Frappe.png" alt="Vanilla Frappe">
                 <h3>Vanilla Frappe</h3>
                 <p>A cool sip of creamy vanilla goodness. 🥤</p>
                 <p><strong>₹245</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Sandwiches">
                 <img class="item-image" src="images/Panner Tikka Sandwich.png" alt="Panner Tikka Sandwich">
                 <h3>Panner Tikka Sandwich</h3>
                 <p>A delicious sandwich filled with seasoned paneer and fresh vegetables. 🥪</p>
                 <p><strong>₹200</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Meals">
                 <img class="item-image" src="images/Margherita Pizza.png" alt="Margherita Pizza">
                 <h3>Margherita Pizza</h3>
                 <p>A classic pizza with fresh tomatoes, mozzarella, and basil. 🍕</p>
                 <p><strong>₹799</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Meals">
                 <img class="item-image" src="images/Veg Burger.png" alt="Veg Burger">
                 <h3>Veg Burger</h3>
                 <p>A delicious veggie burger packed with fresh flavors. 🍔</p>
                 <p><strong>₹149</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Tea">
                 <img class="item-image" src="images/Lemon Tea.png" alt="Lemon Tea">
                 <h3>Lemon Tea</h3>
                 <p>A refreshing cup of tea with a hint of lemon. 🫖</p>
                 <p><strong>₹200</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Tea">
                 <img class="item-image" src="images/Masala Tea.png" alt="Masala Tea">
                 <h3>Masala Tea</h3>
                 <p>A warming cup of tea with a blend of aromatic spices. 🫖</p>
                 <p><strong>₹69</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Bakery">
                 <img class="item-image" src="images/Cinnamon Roll.png" alt="Cinnamon Roll">
                 <h3>Cinnamon Roll</h3>
                 <p>A sweet and fluffy roll infused with cinnamon. 🍞</p>
                 <p><strong>₹400</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Bakery">
                 <img class="item-image" src="images/Garlic Bread.png" alt="Garlic Bread">
                 <h3>Garlic Bread</h3>
                 <p>A crispy slice of bread infused with garlic flavor. 🍞</p>
                 <p><strong>₹199</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Meals">
                 <img class="item-image" src="images/Peri Peri French Fries.png" alt="Peri Peri French Fries">
                 <h3>Peri Peri French Fries</h3>
                 <p>Hot, crispy, and perfectly seasoned with spicy peri peri spices. 🍟</p>
                 <p><strong>₹129</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Coffee">
                 <img class="item-image" src="images/Hot Chocolate.png" alt="Hot Chocolate">
                 <h3>Hot Chocolate</h3>
                 <p>Rich, creamy hot chocolate made to warm your heart with every sip. ☕🍫</p>
                 <p><strong>₹209</strong></p>
                 <button class="btn" type="button">Add to Cart</button>
             </div>
-            <div class="card">
+            <div class="card" data-category="Bakery">
                 <img class="item-image" src="images/Glade Donut.png" alt="Glade Donut">
                 <h3>Glade Donut</h3>
                 <p>Soft, fluffy donut covered with a sweet, smooth glaze for a delightful treat. 🍩</p>
@@ -167,6 +183,7 @@
                 <button class="btn" type="button">Add to Cart</button>
             </div>
         </div>
+        <p class="menu-empty-state" id="menuEmptyState" hidden>No items match your search. Try another name or category.</p>
     </main>
 
     <div class="item-modal" id="itemModal" aria-hidden="true">
@@ -205,8 +222,49 @@
         document.addEventListener('DOMContentLoaded', () => {
             const modal = document.getElementById('itemModal');
             const quantityOutput = document.getElementById('itemQuantity');
+            const menuSearch = document.getElementById('menuSearch');
+            const resultCount = document.getElementById('menuResultCount');
+            const emptyState = document.getElementById('menuEmptyState');
+            const menuCards = Array.from(document.querySelectorAll('.grid .card'));
+            let activeCategory = 'all';
             let selectedCard = null;
             let selectedQuantity = 1;
+
+            function filterMenu() {
+                const query = menuSearch.value.trim().toLocaleLowerCase();
+                let visibleCount = 0;
+
+                menuCards.forEach((card) => {
+                    const matchesCategory = activeCategory === 'all' || card.dataset.category === activeCategory;
+                    const matchesSearch = card.textContent.toLocaleLowerCase().includes(query);
+                    const isVisible = matchesCategory && matchesSearch;
+                    card.hidden = !isVisible;
+                    if (isVisible) visibleCount += 1;
+                });
+
+                resultCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'item' : 'items'} found`;
+                emptyState.hidden = visibleCount > 0;
+            }
+
+            document.querySelectorAll('.category-chip').forEach((button) => {
+                button.addEventListener('click', () => {
+                    activeCategory = button.dataset.filter;
+                    document.querySelectorAll('.category-chip').forEach((chip) => {
+                        const isActive = chip === button;
+                        chip.classList.toggle('is-active', isActive);
+                        chip.setAttribute('aria-pressed', String(isActive));
+                    });
+                    filterMenu();
+                });
+            });
+            menuSearch.addEventListener('input', filterMenu);
+            document.addEventListener('keydown', (event) => {
+                if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+                    event.preventDefault();
+                    menuSearch.focus();
+                }
+            });
+            filterMenu();
 
             document.querySelectorAll('.card').forEach((card) => {
                 const existingActions = card.querySelector('.card-actions');
@@ -222,6 +280,12 @@
                 }
 
                 const actions = card.querySelector('.card-actions');
+                const category = card.dataset.category || 'Signature item';
+                const categoryBadge = document.createElement('span');
+                categoryBadge.className = 'card-category';
+                categoryBadge.textContent = category;
+                card.insertBefore(categoryBadge, card.querySelector('h3'));
+
                 if (actions && !actions.querySelector('.details-btn')) {
                     const detailsButton = document.createElement('button');
                     detailsButton.className = 'details-btn';
