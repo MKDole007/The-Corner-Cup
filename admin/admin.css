@@ -64,110 +64,50 @@ body {
     min-height: 24px;
 }
 
-.menu-admin-section {
-    margin-top: 32px;
+.contact-messages-section {
+    margin-top: 28px;
     padding-top: 24px;
     border-top: 1px solid #eadfce;
 }
 
-.menu-admin-section h2 {
+.contact-messages-section h2 {
     color: #6b3e23;
 }
 
-.menu-admin-section .orders-header p {
+.contact-messages-section .orders-header p {
     color: #80654e;
 }
 
-.menu-item-form {
+.contact-messages-list {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin: 20px 0;
-    padding: 20px;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.contact-message-card {
+    padding: 16px;
     border: 1px solid #eadfce;
-    border-radius: 14px;
+    border-radius: 12px;
     background: #fffaf5;
 }
 
-.menu-item-form label {
-    display: grid;
-    gap: 6px;
-    color: #60432d;
-    font-size: 0.9rem;
-    font-weight: 700;
-}
-
-.menu-item-form input,
-.menu-item-form select {
-    width: 100%;
-    min-height: 42px;
-    padding: 10px 12px;
-    border: 1px solid #d9c8b5;
-    border-radius: 9px;
-    background: white;
-    color: #2b1d12;
-    font: inherit;
-}
-
-.menu-item-form .image-upload-field,
-.menu-item-form .menu-image-preview,
-.menu-item-form > .btn,
-.menu-item-form .form-message {
-    grid-column: 1 / -1;
-}
-
-.menu-item-form input[type="file"] {
-    padding: 8px;
-}
-
-.menu-image-preview {
-    width: 150px;
-    height: 120px;
-    border: 1px solid #eadfce;
-    border-radius: 10px;
-    object-fit: cover;
-}
-
-.menu-item-form > .btn {
-    margin: 0;
-    justify-self: start;
-    border: 0;
-    cursor: pointer;
-    font: inherit;
-    font-weight: 800;
-}
-
-.form-message {
-    min-height: 24px;
-    color: #6b3e23;
-}
-
-.admin-menu-items {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-}
-
-.admin-menu-item {
+.contact-message-heading {
     display: flex;
-    align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    padding: 10px;
-    border: 1px solid #eadfce;
-    border-radius: 12px;
+    color: #4a2b18;
 }
 
-.admin-menu-item img {
-    width: 64px;
-    height: 64px;
-    border-radius: 9px;
-    object-fit: cover;
-}
-
-.admin-menu-item p {
-    margin-top: 3px;
+.contact-message-heading time,
+.contact-message-email {
     color: #80654e;
     font-size: 0.9rem;
+}
+
+.contact-message-body {
+    margin-top: 10px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 [hidden] {
@@ -189,8 +129,4 @@ body {
         flex-direction: column;
     }
 
-    .menu-item-form {
-        grid-template-columns: 1fr;
-        padding: 14px;
-    }
 }

@@ -49,14 +49,17 @@
                     1 to 3, Ground Floor, Manor Maxx, Commerce College Road, Near St Xaviers College, Navrangpura,
                     Ahmedabad, Gujarat 380009. </p>
                 <p><strong>Phone:</strong> +91 (555) 123-4567</p>
-                <p><strong>Email:</strong> hello@Thecornercup.com</p>
             </div>
             <div class="contact-card">
-                <form>
-                    <input type="text" placeholder="Your name">
-                    <input type="email" placeholder="Your email">
-                    <textarea rows="4" placeholder="Your message"></textarea>
-                    <button class="btn" type="button">Send Message</button>
+                <form id="contactForm">
+                    <label class="contact-field-label" for="contactName">Your name</label>
+                    <input id="contactName" name="name" type="text" placeholder="Your name" autocomplete="name" required>
+                    <label class="contact-field-label" for="contactEmail">Your email</label>
+                    <input id="contactEmail" name="email" type="email" placeholder="Your email" autocomplete="email" required>
+                    <label class="contact-field-label" for="contactMessage">Your message</label>
+                    <textarea id="contactMessage" name="message" rows="4" placeholder="Your message" required></textarea>
+                    <button class="btn" type="submit">Send Message</button>
+                    <p id="contactFormStatus" class="contact-form-status" aria-live="polite"></p>
                 </form>
             </div>
         </div>

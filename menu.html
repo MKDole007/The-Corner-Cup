@@ -220,10 +220,9 @@
             const menuSearch = document.getElementById('menuSearch');
             const resultCount = document.getElementById('menuResultCount');
             const emptyState = document.getElementById('menuEmptyState');
-            const menuGrid = document.querySelector('.grid');
             const categoryContainer = document.querySelector('.menu-categories');
-            const menuCards = Array.from(menuGrid.querySelectorAll('.card'));
-            const baseCategories = ['Coffee', 'Tea', 'Bakery', 'Sandwiches', 'Meals', 'Cold Drinks', 'Desserts', 'Breakfast', 'Snacks'];
+            const menuCards = Array.from(document.querySelectorAll('.grid .card'));
+            const baseCategories = ['Coffee', 'Tea', 'Bakery', 'Sandwiches', 'Meals'];
             let activeCategory = 'all';
             let selectedCard = null;
             let selectedQuantity = 1;
@@ -245,9 +244,7 @@
             }
 
             function refreshCategoryFilters() {
-                const dynamicCategories = menuCards.map((card) => card.dataset.category).filter(Boolean);
-                const categories = [...baseCategories, ...dynamicCategories]
-                    .filter((category, index, list) => list.findIndex(item => item.toLocaleLowerCase() === category.toLocaleLowerCase()) === index);
+                const categories = baseCategories;
                 categoryContainer.replaceChildren();
                 [['all', 'All items'], ...categories.map(category => [category, category])].forEach(([value, label]) => {
                     const button = document.createElement('button');
@@ -307,48 +304,6 @@
             menuCards.forEach(enhanceCard);
             refreshCategoryFilters();
             filterMenu();
-
-            async function loadCustomMenuItems() {
-                try {
-                    const response = await fetch('/api/menu-items');
-                    if (!response.ok) throw new Error('Unable to load additional menu items.');
-                    const items = await response.json();
-                    items.forEach((item) => {
-                        const card = document.createElement('article');
-                        card.className = 'card';
-                        card.dataset.category = item.category;
-                        card.dataset.details = item.description;
-                        card.dataset.ingredients = item.ingredients;
-                        card.dataset.time = item.time;
-
-                        const image = document.createElement('img');
-                        image.className = 'item-image';
-                        image.src = item.image;
-                        image.alt = item.name;
-                        const title = document.createElement('h3');
-                        title.textContent = item.name;
-                        const description = document.createElement('p');
-                        description.textContent = item.description;
-                        const priceLine = document.createElement('p');
-                        const price = document.createElement('strong');
-                        price.textContent = `₹${item.price}`;
-                        priceLine.appendChild(price);
-                        const addButton = document.createElement('button');
-                        addButton.className = 'btn';
-                        addButton.type = 'button';
-                        addButton.textContent = 'Add to Cart';
-                        card.append(image, title, description, priceLine, addButton);
-                        menuGrid.appendChild(card);
-                        menuCards.push(card);
-                        enhanceCard(card);
-                    });
-                    refreshCategoryFilters();
-                    filterMenu();
-                } catch (error) {
-                    console.warn(error.message);
-                }
-            }
-            loadCustomMenuItems();
 
             function cardData(card) {
                 const priceText = card.querySelector('p strong')?.textContent.trim() || '₹0';

@@ -30,43 +30,15 @@
             </div>
             <p id="ordersMessage"></p>
             <div id="orders"></div>
-            <section class="menu-admin-section" aria-labelledby="menuAdminTitle">
+            <section class="contact-messages-section" aria-labelledby="contactMessagesTitle">
                 <div class="orders-header">
                     <div>
-                        <h2 id="menuAdminTitle">Menu items</h2>
-                        <p>Add a product and it will appear on the public menu.</p>
+                        <h2 id="contactMessagesTitle">Contact messages</h2>
+                        <p id="contactMessagesStatus" aria-live="polite">Messages submitted from the contact page are saved here.</p>
                     </div>
-                    <button id="refreshMenuButton" class="btn" type="button">Refresh menu</button>
+                    <button id="refreshContactMessagesButton" class="btn" type="button">Refresh messages</button>
                 </div>
-                <form id="menuItemForm" class="menu-item-form">
-                    <label>Item name<input name="name" required maxlength="100" placeholder="e.g. Caramel Latte"></label>
-                    <label>Category
-                        <select name="category" id="itemCategory" required>
-                            <option value="Coffee">Coffee</option>
-                            <option value="Tea">Tea</option>
-                            <option value="Bakery">Bakery</option>
-                            <option value="Sandwiches">Sandwiches</option>
-                            <option value="Meals">Meals</option>
-                            <option value="Cold Drinks">Cold Drinks</option>
-                            <option value="Desserts">Desserts</option>
-                            <option value="Breakfast">Breakfast</option>
-                            <option value="Snacks">Snacks</option>
-                            <option value="Other">Create a category</option>
-                        </select>
-                    </label>
-                    <label id="customCategoryField" hidden>New category<input name="customCategory" maxlength="40" placeholder="Enter a category name"></label>
-                    <label>Price (₹)<input name="price" type="number" min="1" max="100000" step="1" required placeholder="199"></label>
-                    <label>Description<input name="description" required maxlength="300" placeholder="Describe the item"></label>
-                    <label>Ingredients<input name="ingredients" required maxlength="300" placeholder="Main ingredients"></label>
-                    <label>Preparation time<input name="time" required maxlength="40" placeholder="10 min"></label>
-                    <label class="image-upload-field">Product image (JPEG, PNG, WebP · max 1 MB)
-                        <input id="itemImage" name="image" type="file" accept="image/jpeg,image/png,image/webp" required>
-                    </label>
-                    <img id="itemImagePreview" class="menu-image-preview" alt="Selected product preview" hidden>
-                    <button class="btn" type="submit">Add item to menu</button>
-                    <p id="menuItemMessage" class="form-message" aria-live="polite"></p>
-                </form>
-                <div id="adminMenuItems" class="admin-menu-items"></div>
+                <div id="contactMessages" class="contact-messages-list"></div>
             </section>
         </section>
     </main>
@@ -76,13 +48,8 @@
         const loginError = document.getElementById('loginError');
         const ordersMessage = document.getElementById('ordersMessage');
         const ordersContainer = document.getElementById('orders');
-        const menuItemForm = document.getElementById('menuItemForm');
-        const menuItemMessage = document.getElementById('menuItemMessage');
-        const adminMenuItems = document.getElementById('adminMenuItems');
-        const itemImageInput = document.getElementById('itemImage');
-        const itemImagePreview = document.getElementById('itemImagePreview');
-        const categorySelect = document.getElementById('itemCategory');
-        const customCategoryField = document.getElementById('customCategoryField');
+        const contactMessagesStatus = document.getElementById('contactMessagesStatus');
+        const contactMessagesContainer = document.getElementById('contactMessages');
         const apiBaseUrl = window.location.port === '3019' ? '' : 'http://localhost:3019';
         const paymentPromptedOrders = new Set(JSON.parse(sessionStorage.getItem('paymentPromptedOrders') || '[]'));
         let adminToken = sessionStorage.getItem('adminToken');
@@ -201,38 +168,39 @@
             }
         }
 
-        async function loadAdminMenu() {
-            const response = await adminRequest('/api/menu-items');
-            if (!response.ok) throw new Error('Unable to load menu items.');
-            const items = await response.json();
-            adminMenuItems.replaceChildren();
-            if (!items.length) {
-                adminMenuItems.textContent = 'No custom menu items yet.';
+        async function loadContactMessages() {
+            contactMessagesStatus.textContent = 'Loading contact messages...';
+            const response = await adminRequest('/api/admin/contact-messages');
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Unable to load contact messages.');
+
+            contactMessagesContainer.replaceChildren();
+            contactMessagesStatus.textContent = `${result.length} contact message${result.length === 1 ? '' : 's'} saved`;
+            if (!result.length) {
+                contactMessagesContainer.textContent = 'No contact messages yet.';
                 return;
             }
-            items.forEach(item => {
-                const row = document.createElement('article');
-                row.className = 'admin-menu-item';
-                const image = document.createElement('img');
-                image.src = item.image;
-                image.alt = item.name;
-                const details = document.createElement('div');
-                const title = document.createElement('strong');
-                title.textContent = item.name;
-                const summary = document.createElement('p');
-                summary.textContent = `${item.category} · ₹${item.price}`;
-                details.append(title, summary);
-                row.append(image, details);
-                adminMenuItems.appendChild(row);
-            });
-        }
 
-        function readImageAsDataUrl(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(new Error('Unable to read the selected image.'));
-                reader.readAsDataURL(file);
+            result.forEach(message => {
+                const card = document.createElement('article');
+                card.className = 'contact-message-card';
+                const heading = document.createElement('div');
+                heading.className = 'contact-message-heading';
+                const name = document.createElement('strong');
+                name.textContent = message.name;
+                const date = document.createElement('time');
+                date.dateTime = message.createdAt;
+                date.textContent = new Date(message.createdAt).toLocaleString();
+                heading.append(name, date);
+
+                const email = document.createElement('p');
+                email.className = 'contact-message-email';
+                email.textContent = message.email;
+                const body = document.createElement('p');
+                body.className = 'contact-message-body';
+                body.textContent = message.message;
+                card.append(heading, email, body);
+                contactMessagesContainer.appendChild(card);
             });
         }
 
@@ -284,7 +252,7 @@
             loginCard.hidden = true;
             ordersCard.hidden = false;
             await loadOrders();
-            await loadAdminMenu().catch(error => { menuItemMessage.textContent = error.message; });
+            await loadContactMessages().catch(error => { contactMessagesStatus.textContent = error.message; });
             startOrderRefresh();
         });
 
@@ -299,69 +267,15 @@
             loadOrders().catch(error => { ordersMessage.textContent = error.message; });
         });
 
-        document.getElementById('refreshMenuButton').addEventListener('click', () => {
-            loadAdminMenu().catch(error => { menuItemMessage.textContent = error.message; });
-        });
-
-        categorySelect.addEventListener('change', () => {
-            const isCustomCategory = categorySelect.value === 'Other';
-            customCategoryField.hidden = !isCustomCategory;
-            customCategoryField.querySelector('input').required = isCustomCategory;
-        });
-
-        itemImageInput.addEventListener('change', () => {
-            const file = itemImageInput.files[0];
-            itemImagePreview.hidden = !file;
-            if (file) itemImagePreview.src = URL.createObjectURL(file);
-        });
-
-        menuItemForm.addEventListener('submit', async event => {
-            event.preventDefault();
-            menuItemMessage.textContent = '';
-            const formData = new FormData(menuItemForm);
-            const imageFile = itemImageInput.files[0];
-            if (!imageFile || !['image/jpeg', 'image/png', 'image/webp'].includes(imageFile.type) || imageFile.size > 1024 * 1024) {
-                menuItemMessage.textContent = 'Choose a JPEG, PNG, or WebP image under 1 MB.';
-                return;
-            }
-
-            try {
-                const category = categorySelect.value === 'Other'
-                    ? String(formData.get('customCategory')).trim()
-                    : categorySelect.value;
-                const payload = {
-                    name: formData.get('name'),
-                    category,
-                    price: Number(formData.get('price')),
-                    description: formData.get('description'),
-                    ingredients: formData.get('ingredients'),
-                    time: formData.get('time'),
-                    image: await readImageAsDataUrl(imageFile)
-                };
-                const response = await adminRequest('/api/admin/menu-items', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message || 'Unable to add this item.');
-                menuItemForm.reset();
-                customCategoryField.hidden = true;
-                customCategoryField.querySelector('input').required = false;
-                itemImagePreview.hidden = true;
-                itemImagePreview.removeAttribute('src');
-                menuItemMessage.textContent = `${result.name} was added to the menu.`;
-                await loadAdminMenu();
-            } catch (error) {
-                menuItemMessage.textContent = error.message || 'Unable to add this item.';
-            }
+        document.getElementById('refreshContactMessagesButton').addEventListener('click', () => {
+            loadContactMessages().catch(error => { contactMessagesStatus.textContent = error.message; });
         });
 
         if (adminToken) {
             loginCard.hidden = true;
             ordersCard.hidden = false;
             loadOrders()
-                .then(() => Promise.all([loadAdminMenu(), startOrderRefresh()]))
+                .then(() => Promise.all([loadContactMessages(), startOrderRefresh()]))
                 .catch(error => { ordersMessage.textContent = error.message; });
         }
     </script>

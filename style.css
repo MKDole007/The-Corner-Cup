@@ -392,6 +392,30 @@ header .nav-links a.active {
     box-shadow: 0 10px 25px rgba(34, 21, 13, 0.08);
 }
 
+.contact-field-label {
+    display: block;
+    margin: 0 0 4px;
+    color: #60432d;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.contact-form-status {
+    min-height: 24px;
+    margin-top: 10px;
+    color: #6b3e23;
+    font-size: 0.9rem;
+}
+
+.contact-form-status.is-error {
+    color: #a32626;
+}
+
+.contact-card form button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
 form input,
 form textarea {
     width: 100%;
