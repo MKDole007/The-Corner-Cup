@@ -38,10 +38,10 @@ function setupContactForm() {
                 })
             });
             const result = await response.json();
-            if (!response.ok) throw new Error(result.message || 'Unable to save your message.');
+            if (!response.ok) throw new Error(result.message || 'Unable to send your message.');
 
             contactForm.reset();
-            status.textContent = 'Thank you. Your message has been saved successfully.';
+            status.textContent = 'Thank you. Your message has been sent successfully.';
         } catch (error) {
             status.textContent = error.message || 'Could not send your message. Check your connection and try again.';
             status.classList.add('is-error');
